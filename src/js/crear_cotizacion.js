@@ -5,24 +5,9 @@ let editingId = null;
 
 // Inicializar formulario
 document.addEventListener('DOMContentLoaded', function() {
-
-    const nombre_empresa = document.getElementById('cliente');
-    const nombre_contacto = document.getElementById('nombre_contacto');
-    const telefono = document.getElementById('telefono');
-    const email = document.getElementById('email');
-    const proyecto_servicio = document.getElementById('proyecto_servicio');
-    const fecha = document.getElementById('fecha');
-    const cotizacionForm = document.getElementById('cotizacionForm');
     
-
-    cotizacionForm.addEventListener('submit', agregar_cotizacion(
-        nombre_empresa.value.trim(),
-        fecha.value.trim(),
-        nombre_contacto.value.trim(),
-        telefono.value.trim(),
-        email.value.trim(),
-        proyecto_servicio.value.trim()
-    ));
+    const cotizacionForm = document.getElementById('cotizacionForm');
+    cotizacionForm.addEventListener('submit', agregar_cotizacion);
 
     // Establecer fecha actual
     fecha.value = new Date().toISOString().split('T')[0];
@@ -42,9 +27,18 @@ document.addEventListener('DOMContentLoaded', function() {
     mostrarMensajeNoProductos();
 });
 
-async function agregar_cotizacion(nombre_empresa, fecha, nombre_contacto, telefono, email, proyecto_servicio){
+async function agregar_cotizacion(event){
+    const nombre_empresa = document.getElementById('cliente').value.trim();
+    const nombre_contacto = document.getElementById('nombre_contacto').value.trim();
+    const telefono = document.getElementById('telefono').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const proyecto_servicio = document.getElementById('proyecto_servicio').value.trim();
+    const fecha = document.getElementById('fecha').value.trim();
+    console.log(nombre_empresa, fecha, nombre_contacto, telefono, email, proyecto_servicio)
     try{
-        await window.api.agregarCotizacion(nombre_empresa, fecha, nombre_contacto, telefono, email, proyecto_servicio);
+        await window.api.agregarCotizacion(
+            nombre_empresa, fecha, nombre_contacto, telefono, email, proyecto_servicio
+        );
     }catch(err){
         console.log(err);
         alert("Error al agregar cotizacion");
