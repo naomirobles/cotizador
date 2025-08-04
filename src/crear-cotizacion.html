@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Cotización - La Liga</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#1e3a8a',
+                        'secondary': '#fbbf24',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <div class="w-64 bg-blue-900 text-white">
+            <div class="p-6">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center">
+                        <span class="text-blue-900 font-bold text-sm">L</span>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold">la liga</h1>
+                        <p class="text-xs opacity-75">comunicación flexible</p>
+                    </div>
+                </div>
+            </div>
+            
+            <nav class="mt-8">
+                <a href="index.html" class="flex items-center px-6 py-3 hover:bg-blue-800 transition-colors">
+                    <i class="fas fa-file-invoice mr-3"></i>
+                    <span>Cotizaciones Guardadas</span>
+                </a>
+                <a href="#" class="flex items-center px-6 py-3 bg-blue-800 border-r-4 border-yellow-400">
+                    <i class="fas fa-plus mr-3"></i>
+                    <span>Agregar cotización</span>
+                </a>
+            </nav>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col">
+            <!-- Header -->
+            <div class="bg-white shadow-sm border-b px-8 py-6">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800">Registro de Cotización</h2>
+                        <p class="text-gray-600 mt-1">Crea una nueva cotización para tu cliente</p>
+                    </div>
+                    <div class="bg-yellow-100 text-yellow-800 px-6 py-2 rounded-full">
+                        <span class="font-medium">cotización</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Content -->
+            <div class="flex-1 p-8 overflow-y-auto">
+                <form id="cotizacionForm" class="max-w-6xl mx-auto">
+                    
+                    <!-- Información del Cliente -->
+                    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Información del Cliente</h3>
+                        
+                        <div class="grid grid-cols-1 gap-6">
+                            <!-- Cliente -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Cliente:</label>
+                                <input 
+                                    type="text" 
+                                    id="cliente"
+                                    name="cliente"
+                                    placeholder="Nombre de empresa o cliente"
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    required
+                                >
+                            </div>
+
+                            <!-- Contacto -->
+                            <div>
+                                <h4 class="text-md font-medium text-gray-800 mb-3">Contacto</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Teléfono:</label>
+                                        <input 
+                                            type="tel" 
+                                            id="telefono"
+                                            name="telefono"
+                                            placeholder="Ingresar teléfono"
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        >
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Email:</label>
+                                        <input 
+                                            type="email" 
+                                            id="email"
+                                            name="email"
+                                            placeholder="Ingresar mail"
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        >
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Proyecto o servicio -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Proyecto o servicio:</label>
+                                <input 
+                                    type="text" 
+                                    id="proyecto_servicio"
+                                    name="proyecto_servicio"
+                                    placeholder="Nombre del proyecto o servicio"
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    required
+                                >
+                            </div>
+
+                            <!-- Fecha -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Fecha:</label>
+                                <input 
+                                    type="date" 
+                                    id="fecha"
+                                    name="fecha"
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    required
+                                >
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Productos/Servicios -->
+                    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-semibold text-gray-800">Productos/Servicios</h3>
+                            <button 
+                                type="button" 
+                                onclick="agregarItem()"
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+                            >
+                                <i class="fas fa-plus"></i>
+                                <span>Agregar Producto</span>
+                            </button>
+                        </div>
+
+                        <!-- Tabla de productos -->
+                        <div class="overflow-x-auto">
+                            <table class="w-full border-collapse">
+                                <thead>
+                                    <tr class="border-b border-gray-200">
+                                        <th class="text-left py-3 px-2 text-sm font-semibold text-gray-700">Nombre del producto</th>
+                                        <th class="text-left py-3 px-2 text-sm font-semibold text-gray-700">Concepto</th>
+                                        <th class="text-left py-3 px-2 text-sm font-semibold text-gray-700">Unidades</th>
+                                        <th class="text-left py-3 px-2 text-sm font-semibold text-gray-700">Precio unitario</th>
+                                        <th class="text-left py-3 px-2 text-sm font-semibold text-gray-700">Imagen</th>
+                                        <th class="text-center py-3 px-2 text-sm font-semibold text-gray-700">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="productosTable">
+                                    <!-- Items se agregan dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Mensaje cuando no hay productos -->
+                        <div id="noProductsMessage" class="text-center py-8 text-gray-500">
+                            <i class="fas fa-box-open text-4xl mb-4 opacity-50"></i>
+                            <p>No hay productos agregados</p>
+                            <button 
+                                type="button" 
+                                onclick="agregarItem()"
+                                class="mt-2 text-blue-600 hover:text-blue-800 font-medium"
+                            >
+                                Agregar primer producto
+                            </button>
+                        </div>
+
+                        <!-- Total -->
+                        <div class="mt-6 pt-4 border-t border-gray-200">
+                            <div class="flex justify-end">
+                                <div class="text-right">
+                                    <p class="text-sm text-gray-600">Subtotal:</p>
+                                    <p class="text-xl font-bold text-gray-800" id="totalAmount">$0.00</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botones de acción -->
+                    <div class="flex justify-between items-center">
+                        <button 
+                            type="button" 
+                            onclick="volverAtras()"
+                            class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors"
+                        >
+                            <i class="fas fa-arrow-left"></i>
+                            <span>Volver</span>
+                        </button>
+
+                        <div class="flex space-x-4">
+                            <button 
+                                type="button" 
+                                onclick="guardarBorrador()"
+                                class="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors"
+                            >
+                                <i class="fas fa-save"></i>
+                                <span>Guardar Borrador</span>
+                            </button>
+                            
+                            <button 
+                                type="submit"
+                                class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors"
+                            >
+                                <i class="fas fa-check"></i>
+                                <span>Guardar Cotización</span>
+                            </button>
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para seleccionar imagen -->
+    <div id="imageModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 w-96">
+            <h3 class="text-lg font-semibold mb-4">Seleccionar Imagen</h3>
+            <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
+                <p class="text-gray-600 mb-4">Selecciona una imagen para el producto</p>
+                <input type="file" id="imageInput" accept="image/*" class="hidden">
+                <button 
+                    type="button" 
+                    onclick="document.getElementById('imageInput').click()"
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+                >
+                    Examinar Archivos
+                </button>
+            </div>
+            <div class="flex justify-end space-x-3 mt-6">
+                <button onclick="cerrarModalImagen()" class="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50">
+                    Cancelar
+                </button>
+                <button onclick="confirmarImagen()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                    Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/database.js"></script>
+    <script>
+        const { ipcRenderer } = require('electron');
+        const CotizacionesDB = require('./js/database.js');
+        const db = new CotizacionesDB();
+        
+        let itemCounter = 0;
+        let currentImageRow = null;
+        let isEditing = false;
+        let editingId = null;
+
+        // Inicializar formulario
+        document.addEventListener('DOMContentLoaded', function() {
+            // Establecer fecha actual
+            document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
+            
+            // Verificar si estamos editando
+            const urlParams = new URLSearchParams(window.location.search);
+            const cotizacionId = urlParams.get('id');
+            
+            if (cotizacionId) {
+                cargarCotizacionParaEditar(cotizacionId);
+            } else {
+                // Agregar dos items por defecto (como en la imagen)
+                agregarItem();
+                agregarItem();
+            }
+
+            mostrarMensajeNoProductos();
+        });
+
+        function cargarCotizacionParaEditar(id) {
+            isEditing = true;
+            editingId = id;
+            
+            const cotizacion = db.obtenerCotizacion(id);
+            if (cotizacion) {
+                // Llenar formulario
+                document.getElementById('cliente').value = cotizacion.cliente;
+                document.getElementById('telefono').value = cotizacion.telefono || '';
+                document.getElementById('email').value = cotizacion.email || '';
+                document.getElementById('proyecto_servicio').value = cotizacion.proyecto_servicio;
+                document.getElementById('fecha').value = cotizacion.fecha;
+                
+                // Cargar items
+                cotizacion.items.forEach(item => {
+                    agregarItem(item);
+                });
+                
+                document.querySelector('h2').textContent = 'Editar Cotización';
+            }
+        }
+
+        function agregarItem(datosItem = null) {
+            itemCounter++;
+            const tbody = document.getElementById('productosTable');
+            const row = document.createElement('tr');
+            row.className = 'border-b border-gray-100';
+            row.id = `item-${itemCounter}`;
+
+            row.innerHTML = `
+                <td class="py-3 px-2">
+                    <input 
+                        type="text" 
+                        name="nombre_producto_${itemCounter}"
+                        value="${datosItem ? datosItem.nombre_producto : 'Libreta'}"
+                        class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 text-sm"
+                        placeholder="Nombre del producto"
+                    >
+                </td>
+                <td class="py-3 px-2">
+                    <input 
+                        type="text" 
+                        name="concepto_${itemCounter}"
+                        value="${datosItem ? datosItem.concepto : 'Libreta tamaño carta'}"
+                        class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 text-sm"
+                        placeholder="Descripción"
+                    >
+                </td>
+                <td class="py-3 px-2">
+                    <input 
+                        type="number" 
+                        name="unidades_${itemCounter}"
+                        value="${datosItem ? datosItem.unidades : '200'}"
+                        class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 text-sm"
+                        placeholder="0"
+                        min="1"
+                        onchange="calcularTotal()"
+                    >
+                </td>
+                <td class="py-3 px-2">
+                    <input 
+                        type="number" 
+                        name="precio_${itemCounter}"
+                        value="${datosItem ? datosItem.precio_unitario : '0.39'}"
+                        step="0.01"
+                        class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 text-sm"
+                        placeholder="0.00"
+                        min="0"
+                        onchange="calcularTotal()"
+                    >
+                </td>
+                <td class="py-3 px-2">
+                    <button 
+                        type="button" 
+                        onclick="seleccionarImagen(${itemCounter})"
+                        class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm flex items-center space-x-1 transition-colors"
+                    >
+                        <i class="fas fa-image"></i>
+                        <span>Agregar imagen</span>
+                    </button>
+                    <input type="hidden" name="imagen_${itemCounter}" value="${datosItem ? datosItem.imagen || '' : ''}">
+                </td>
+                <td class="py-3 px-2 text-center">
+                    <button 
+                        type="button" 
+                        onclick="agregarItem()"
+                        class="bg-green-500 hover:bg-green-600 text-white w-8 h-8 rounded-full mr-2 transition-colors"
+                        title="Agregar fila"
+                    >
+                        <i class="fas fa-plus text-sm"></i>
+                    </button>
+                    <button 
+                        type="button" 
+                        onclick="eliminarItem(${itemCounter})"
+                        class="bg-red-500 hover:bg-red-600 text-white w-8 h-8 rounded-full transition-colors"
+                        title="Eliminar fila"
+                    >
+                        <i class="fas fa-minus text-sm"></i>
+                    </button>
+                </td>
+            `;
+
+            tbody.appendChild(row);
+            mostrarMensajeNoProductos();
+            calcularTotal();
+        }
+
+        function eliminarItem(id) {
+            const row = document.getElementById(`item-${id}`);
+            if (row) {
+                row.remove();
+                mostrarMensajeNoProductos();
+                calcularTotal();
+            }
+        }
+
+        function mostrarMensajeNoProductos() {
+            const tbody = document.getElementById('productosTable');
+            const mensaje = document.getElementById('noProductsMessage');
+            
+            if (tbody.children.length === 0) {
+                mensaje.classList.remove('hidden');
+            } else {
+                mensaje.classList.add('hidden');
+            }
+        }
+
+        function calcularTotal() {
+            let total = 0;
+            const tbody = document.getElementById('productosTable');
+            
+            Array.from(tbody.children).forEach(row => {
+                const unidades = parseFloat(row.querySelector('input[name^="unidades_"]').value) || 0;
+                const precio = parseFloat(row.querySelector('input[name^="precio_"]').value) || 0;
+                total += unidades * precio;
+            });
+
+            document.getElementById('totalAmount').textContent = `$${total.toFixed(2)}`;
+        }
+
+        async function seleccionarImagen(itemId) {
+            currentImageRow = itemId;
+            document.getElementById('imageModal').classList.remove('hidden');
+            document.getElementById('imageModal').classList.add('flex');
+        }
+
+        function cerrarModalImagen() {
+            document.getElementById('imageModal').classList.add('hidden');
+            document.getElementById('imageModal').classList.remove('flex');
+            currentImageRow = null;
+        }
+
+        async function confirmarImagen() {
+            const fileInput = document.getElementById('imageInput');
+            if (fileInput.files.length > 0 && currentImageRow) {
+                try {
+                    const fileName = await ipcRenderer.invoke('select-image');
+                    if (fileName) {
+                        const hiddenInput = document.querySelector(`input[name="imagen_${currentImageRow}"]`);
+                        hiddenInput.value = fileName;
+                        
+                        // Cambiar el botón para mostrar que se seleccionó imagen
+                        const button = document.querySelector(`#item-${currentImageRow} button[onclick*="seleccionarImagen"]`);
+                        button.innerHTML = '<i class="fas fa-check"></i> <span>Imagen agregada</span>';
+                        button.classList.remove('bg-green-500', 'hover:bg-green-600');
+                        button.classList.add('bg-blue-500', 'hover:bg-blue-600');
+                    }
+                } catch (error) {
+                    console.error('Error al seleccionar imagen:', error);
+                    alert('Error al seleccionar la imagen');
+                }
+            }
+            cerrarModalImagen();
+        }
+
+        function volverAtras() {
+            window.location.href = 'index.html';
+        }
+
+        function guardarBorrador() {
+            // Implementar guardado como borrador
+            alert('Funcionalidad de borrador en desarrollo');
+        }
+
+        // Manejar envío del formulario
+        document.getElementById('cotizacionForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Recopilar datos del formulario
+            const formData = new FormData(e.target);
+            const items = [];
+            
+            // Obtener todos los items
+            const tbody = document.getElementById('productosTable');
+            Array.from(tbody.children).forEach(row => {
+                const nombreInput = row.querySelector('input[name^="nombre_producto_"]');
+                const conceptoInput = row.querySelector('input[name^="concepto_"]');
+                const unidadesInput = row.querySelector('input[name^="unidades_"]');
+                const precioInput = row.querySelector('input[name^="precio_"]');
+                const imagenInput = row.querySelector('input[name^="imagen_"]');
+                
+                if (nombreInput && nombreInput.value.trim()) {
+                    items.push({
+                        nombre_producto: nombreInput.value.trim(),
+                        concepto: conceptoInput.value.trim(),
+                        unidades: parseInt(unidadesInput.value) || 0,
+                        precio_unitario: parseFloat(precioInput.value) || 0,
+                        imagen: imagenInput.value
+                    });
+                }
+            });
+
+            if (items.length === 0) {
+                alert('Debe agregar al menos un producto o servicio');
+                return;
+            }
+
+            const cotizacionData = {
+                id: isEditing ? editingId : `COT${Date.now()}`,
+                empresa: formData.get('cliente'),
+                cliente: formData.get('cliente'),
+                telefono: formData.get('telefono'),
+                email: formData.get('email'),
+                proyecto_servicio: formData.get('proyecto_servicio'),
+                fecha: formData.get('fecha'),
+                items: items
+            };
+
+            try {
+                if (isEditing) {
+                    db.actualizarCotizacion(editingId, cotizacionData);
+                    alert('Cotización actualizada exitosamente');
+                } else {
+                    db.crearCotizacion(cotizacionData);
+                    alert('Cotización guardada exitosamente');
+                }
+                
+                window.location.href = 'index.html';
+            } catch (error) {
+                console.error('Error al guardar cotización:', error);
+                alert('Error al guardar la cotización');
+            }
+        });
+
+        // Evento para el input de archivo
+        document.getElementById('imageInput').addEventListener('change', function(e) {
+            if (e.target.files.length > 0) {
+                const fileName = e.target.files[0].name;
+                console.log('Archivo seleccionado:', fileName);
+            }
+        });
+
+        // Calcular total inicial
+        setTimeout(() => {
+            calcularTotal();
+        }, 100);
+    </script>
+</body>
+</html>

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cotizador - La Liga</title>
+    <link href="./output.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <div class="flex h-screen">
+        <!-- Sidebar --------------------------------------------------------------------------->
+        <div class="w-64 bg-blue-900 text-white">
+            <div class="p-6">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center">
+                        <span class="text-blue-900 font-bold text-sm">L</span>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold">la liga</h1>
+                        <p class="text-xs opacity-75">comunicación flexible</p>
+                    </div>
+                </div>
+            </div>
+            
+            <nav class="mt-8">
+                <a href="#" class="flex items-center px-6 py-3 bg-blue-800 border-r-4 border-yellow-400">
+                    <i class="fas fa-file-invoice mr-3"></i>
+                    <span>Cotizaciones Guardadas</span>
+                </a>
+                <a href="#" onclick="abrirNuevaCotizacion()" class="flex items-center px-6 py-3 hover:bg-blue-800 transition-colors">
+                    <i class="fas fa-plus mr-3"></i>
+                    <span>Agregar cotización</span>
+                </a>
+            </nav>
+        </div>
+
+        <!-- Main Content--------------------------------------------------------------------------- -->
+        <div class="flex-1 flex flex-col">
+            <!-- Header ----------------------------------------------------------------------------->
+            <div class="bg-white shadow-sm border-b px-8 py-6">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800">Cotizaciones Guardadas</h2>
+                        <p class="text-gray-600 mt-1">Gestiona todas tus cotizaciones</p>
+                    </div>
+                    <div class="bg-yellow-100 text-yellow-800 px-6 py-2 rounded-full">
+                        <span class="font-medium">cotización</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search and Filter ----------------------------------------------------------------------------->
+            <div class="bg-white px-8 py-4 border-b">
+                <div class="flex space-x-4">
+                    <div class="flex-1 relative">
+                        <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <input 
+                            type="text" 
+                            placeholder="Buscar cotizaciones..." 
+                            class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            id="searchInput"
+                        >
+                    </div>
+                    <button class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center space-x-2">
+                        <i class="fas fa-filter"></i>
+                        <span>Filtrar</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Table Content --------------------------------------------------------------------------- -->
+            <div class="flex-1 p-8">
+                <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+                    <table class="w-full">
+                        <thead class="bg-gray-50 border-b">
+                            <tr>
+                                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900">ID</th>
+                                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900">Empresa</th>
+                                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900">Proyecto o servicio</th>
+                                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900">Fecha</th>
+                                <th class="px-6 py-4 text-center text-sm font-semibold text-gray-900">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cotizacionesTable" class="divide-y divide-gray-200">
+                            <!-- Datos se cargan dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Add Button ----------------------------------------------------------------------------->
+                <div class="mt-8 flex justify-end">
+                    <button 
+                        onclick="abrirNuevaCotizacion()"
+                        class="bg-blue-900 hover:bg-blue-800 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors"
+                    >
+                        <i class="fas fa-plus"></i>
+                        <span>Agregar Cotización</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de confirmación para eliminar -->
+    <div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 w-96">
+            <h3 class="text-lg font-semibold mb-4">Confirmar eliminación</h3>
+            <p class="text-gray-600 mb-6">¿Estás seguro de que deseas eliminar esta cotización?</p>
+            <div class="flex justify-end space-x-3">
+                <button onclick="cerrarModalEliminar()" class="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50">
+                    Cancelar
+                </button>
+                <button onclick="confirmarEliminar()" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+                    Eliminar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/database.js"></script>
+    <script>
+        const CotizacionesDB = require('./js/database.js');
+        const db = new CotizacionesDB();
+        let cotizacionAEliminar = null;
+
+        // Cargar cotizaciones al iniciar
+        document.addEventListener('DOMContentLoaded', cargarCotizaciones);
+
+        function cargarCotizaciones() {
+            const cotizaciones = db.obtenerCotizaciones();
+            const tbody = document.getElementById('cotizacionesTable');
+            
+            tbody.innerHTML = '';
+            
+            if (cotizaciones.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="px-6 py-8 text-center text-gray-500">
+                            <i class="fas fa-file-invoice text-4xl mb-4 opacity-50"></i>
+                            <p>No hay cotizaciones guardadas</p>
+                            <button onclick="abrirNuevaCotizacion()" class="mt-4 text-blue-600 hover:text-blue-800">
+                                Crear primera cotización
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            cotizaciones.forEach(cotizacion => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50';
+                row.innerHTML = `
+                    <td class="px-6 py-4 text-sm text-gray-900">${cotizacion.id}</td>
+                    <td class="px-6 py-4 text-sm text-gray-900">${cotizacion.empresa}</td>
+                    <td class="px-6 py-4 text-sm text-gray-900">${cotizacion.proyecto_o_servicio}</td>
+                    <td class="px-6 py-4 text-sm text-gray-900">${cotizacion.fecha}</td>
+                    <td class="px-6 py-4 text-center">
+                        <div class="flex justify-center space-x-2">
+                            <button 
+                                onclick="editarCotizacion('${cotizacion.id}')"
+                                class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-sm transition-colors"
+                            >
+                                Editar
+                            </button>
+                            <button 
+                                onclick="generarPDF('${cotizacion.id}')"
+                                class="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded text-sm transition-colors"
+                            >
+                                Ver PDF
+                            </button>
+                            <button 
+                                onclick="eliminarCotizacion('${cotizacion.id}')"
+                                class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded text-sm transition-colors"
+                            >
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function abrirNuevaCotizacion() {
+            window.location.href = 'crear-cotizacion.html';
+        }
+
+        function editarCotizacion(id) {
+            window.location.href = `crear-cotizacion.html?id=${id}`;
+        }
+
+        function eliminarCotizacion(id) {
+            cotizacionAEliminar = id;
+            document.getElementById('deleteModal').classList.remove('hidden');
+            document.getElementById('deleteModal').classList.add('flex');
+        }
+
+        function cerrarModalEliminar() {
+            document.getElementById('deleteModal').classList.add('hidden');
+            document.getElementById('deleteModal').classList.remove('flex');
+            cotizacionAEliminar = null;
+        }
+
+        function confirmarEliminar() {
+            if (cotizacionAEliminar) {
+                db.eliminarCotizacion(cotizacionAEliminar);
+                cargarCotizaciones();
+                cerrarModalEliminar();
+            }
+        }
+
+        async function generarPDF(id) {
+            // Esta función se implementará con el generador de PDF
+            const cotizacion = db.obtenerCotizacion(id);
+            console.log('Generar PDF para:', cotizacion);
+            // TODO: Implementar generación de PDF
+            alert('Función de PDF en desarrollo');
+        }
+
+        // Búsqueda en tiempo real
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const busqueda = e.target.value.toLowerCase();
+            const filas = document.querySelectorAll('#cotizacionesTable tr');
+            
+            filas.forEach(fila => {
+                const texto = fila.textContent.toLowerCase();
+                if (texto.includes(busqueda)) {
+                    fila.style.display = '';
+                } else {
+                    fila.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
