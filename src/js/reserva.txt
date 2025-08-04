@@ -1,0 +1,21 @@
+function cargarCotizacionParaEditar(id) {
+    isEditing = true;
+    editingId = id;
+    
+    const cotizacion = db.obtenerCotizacion(id);
+    if (cotizacion) {
+        // Llenar formulario
+        document.getElementById('cliente').value = cotizacion.cliente;
+        document.getElementById('telefono').value = cotizacion.telefono || '';
+        document.getElementById('email').value = cotizacion.email || '';
+        document.getElementById('proyecto_servicio').value = cotizacion.proyecto_servicio;
+        document.getElementById('fecha').value = cotizacion.fecha;
+        
+        // Cargar items
+        cotizacion.items.forEach(item => {
+            agregarItem(item);
+        });
+        
+        document.querySelector('h2').textContent = 'Editar Cotización';
+    }
+}
