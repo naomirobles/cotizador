@@ -87,6 +87,15 @@ ipcMain.handle('obtener-cotizacion-id', (event, id) => {
   });
 });
 
+ipcMain.handle('eliminar-cotizacion', (event, id) => {
+  return new Promise((resolve, reject) => {
+    db.all(`DELETE FROM COTIZACIONES WHERE id_cotizacion = ?`, [id], function(err) {
+      if (err) reject(err);
+      else resolve(this.lastID);
+    });
+  });
+});
+
 ipcMain.handle('obtener-productos', (event, id) => {
   return new Promise((resolve, reject) => {
     db.all(`SELECT * FROM PRODUCTOS WHERE id = ? ORDER BY concepto`, [id], function(err) {
