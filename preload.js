@@ -6,9 +6,9 @@ contextBridge.exposeInMainWorld('api', {
   obtenerCotizacionId: (id) => ipcRenderer.invoke('obtener-cotizacion-id', id),
   agregarCotizacion: (empresa, fecha, nombre_contacto, telefono, email, proyecto_servicio) => 
     ipcRenderer.invoke('agregar-cotizacion', empresa, fecha, nombre_contacto, telefono, email, proyecto_servicio),
+  eliminarCotizacion: (id) => ipcRenderer.invoke('eliminar-cotizacion', id),
   //actualizarCotizacion: (id, empresa, fecha, nombre_contacto, telefono, email, proyecto_servicio) => 
   //  ipcRenderer.invoke('actualizar-cotizacion', id, empresa, fecha, nombre_contacto, telefono, email, proyecto_servicio),
-  //eliminarCotizacion: (id) => ipcRenderer.invoke('eliminar-cotizacion', id),
 
   // Productos
   agregarProducto: (id_cotizacion, precio_unitario, concepto, unidades, imagen) =>

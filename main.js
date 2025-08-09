@@ -104,6 +104,15 @@ ipcMain.handle('agregar-cotizacion', (event, empresa, fecha, nombre_contacto, te
   });
 });
 
+ipcMain.handle('eliminar-cotizacion', (event, id) => {
+  return new Promise((resolve, reject) => {
+    db.all(`DELETE FROM COTIZACIONES WHERE id_cotizacion = ?`, [id], function(err) {
+      if (err) reject(err);
+      else resolve(this.lastID);
+    });
+  });
+});
+
 // Tabla productos 
 ipcMain.handle('agregar-producto', (event, id_cotizacion, precio_unitario, concepto, unidades, imagen = null) => {
   return new Promise((resolve, reject) => {
