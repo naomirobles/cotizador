@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron'); // ← AGREGAR dialog aquí
 const path = require('path');
 const fs = require('fs');
+//SQLITE UWU
 const sqlite3 = require('sqlite3').verbose();
 
 // Crear directorio de imágenes si no existe
