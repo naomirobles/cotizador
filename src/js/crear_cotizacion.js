@@ -27,6 +27,45 @@ document.addEventListener('DOMContentLoaded', function() {
     mostrarMensajeNoProductos();
 });
 
+async function cargarCotizacionParaEditar(id) {
+  console.log("este es el id: ", id);
+
+  isEditing  = true;
+  editingId = id;
+  
+  // 1) Traer cotización
+  const cotizacion = await window.api.obtenerCotizacionId(id);
+
+  // 2) Traer productos asociados (si ya implementaste el handler)
+  const items = await window.api.obtenerProductos(id);
+
+  if (cotizacion) {
+    // —————— Rellenar los inputs correctamente ——————
+    document.getElementById('cliente').value           = cotizacion.empresa;
+    document.getElementById('nombre_contacto').value   = cotizacion.nombre_contacto;
+    document.getElementById('telefono').value          = cotizacion.telefono;
+    document.getElementById('email').value             = cotizacion.email;
+    document.getElementById('proyecto_servicio').value = cotizacion.proyecto_servicio;
+    document.getElementById('fecha').value = cotizacion.fecha.trim();
+
+    // —————— Cargar filas de productos ——————
+    items.forEach(item => {
+      agregarItem({
+        nombre_producto:  item.nombre_producto || item.concepto, 
+        concepto:         item.concepto,
+        unidades:         item.unidades,
+        precio_unitario:  item.precio_unitario,
+        imagen:           item.imagen || ''
+      });
+    });
+
+    // Ajustar UI
+    document.querySelector('h2').textContent = 'Editar Cotización';
+    calcularTotal();  // recalcula subtotales
+  }
+}
+
+
 async function agregar_cotizacion(event){
     const nombre_empresa = document.getElementById('cliente').value.trim();
     const nombre_contacto = document.getElementById('nombre_contacto').value.trim();

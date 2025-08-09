@@ -82,6 +82,7 @@ function cerrarModalEliminar() {
 async function confirmarEliminar() {
     if (cotizacionAEliminar) {
         await window.api.eliminarCotizacion(cotizacionAEliminar);
+        await window.api.eliminarProductosCotizacion(cotizacionAEliminar);
         cargarCotizaciones();
         cerrarModalEliminar();
     }

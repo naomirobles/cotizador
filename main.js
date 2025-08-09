@@ -80,9 +80,9 @@ ipcMain.handle('obtener-cotizaciones', () => {
 
 ipcMain.handle('obtener-cotizacion-id', (event, id) => {
   return new Promise((resolve, reject) => {
-    db.all(`SELECT * FROM COTIZACIONES ORDER BY fecha WHERE id = ?`, [id], function(err) {
+    db.get(`SELECT * FROM COTIZACIONES WHERE id_cotizacion = ?`, [id], (err, rows) => {
       if (err) reject(err);
-      else resolve(this.lastID);
+      else resolve(rows);
     });
   });
 });
@@ -98,9 +98,27 @@ ipcMain.handle('eliminar-cotizacion', (event, id) => {
 
 ipcMain.handle('obtener-productos', (event, id) => {
   return new Promise((resolve, reject) => {
-    db.all(`SELECT * FROM PRODUCTOS WHERE id = ? ORDER BY concepto`, [id], function(err) {
+    db.all(`SELECT * FROM PRODUCTOS WHERE id_cotizacion = ? ORDER BY concepto`, [id], (err, rows) => {
       if (err) reject(err);
-      else resolve(this.changes);
+      else resolve(rows);
+    });
+  });
+});
+
+ipcMain.handle('eliminar-productos-cotizacion', (event, id) => {
+  return new Promise((resolve, reject) => {
+    db.all(`DELETE FROM PRODUCTOS WHERE id_cotizacion = ?`, [id], function(err) {
+      if (err) reject(err);
+      else resolve(this.lastID);
+    });
+  });
+});
+
+ipcMain.handle('eliminar-producto', (event, id) => {
+  return new Promise((resolve, reject) => {
+    db.all(`DELETE FROM PRODUCTOS WHERE id_producto = ?`, [id], function(err) {
+      if (err) reject(err);
+      else resolve(this.lastID);
     });
   });
 });
