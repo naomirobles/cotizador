@@ -1,12 +1,10 @@
-const CotizacionesDB = require('./js/database.js');
-const db = new CotizacionesDB();
 let cotizacionAEliminar = null;
 
 // Cargar cotizaciones al iniciar
 document.addEventListener('DOMContentLoaded', cargarCotizaciones);
 
-function cargarCotizaciones() {
-    const cotizaciones = db.obtenerCotizaciones();
+async function cargarCotizaciones() {
+    const cotizaciones = await window.api.obtenerCotizaciones();
     const tbody = document.getElementById('cotizacionesTable');
     
     tbody.innerHTML = '';
@@ -30,26 +28,26 @@ function cargarCotizaciones() {
         const row = document.createElement('tr');
         row.className = 'hover:bg-gray-50';
         row.innerHTML = `
-            <td class="px-6 py-4 text-sm text-gray-900">${cotizacion.id}</td>
+            <td class="px-6 py-4 text-sm text-gray-900">${cotizacion.id_cotizacion}</td>
             <td class="px-6 py-4 text-sm text-gray-900">${cotizacion.empresa}</td>
-            <td class="px-6 py-4 text-sm text-gray-900">${cotizacion.proyecto_o_servicio}</td>
+            <td class="px-6 py-4 text-sm text-gray-900">${cotizacion.proyecto_servicio}</td>
             <td class="px-6 py-4 text-sm text-gray-900">${cotizacion.fecha}</td>
             <td class="px-6 py-4 text-center">
                 <div class="flex justify-center space-x-2">
                     <button 
-                        onclick="editarCotizacion('${cotizacion.id}')"
+                        onclick="editarCotizacion('${cotizacion.id_cotizacion}')"
                         class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-sm transition-colors"
                     >
                         Editar
                     </button>
                     <button 
-                        onclick="generarPDF('${cotizacion.id}')"
+                        onclick="generarPDF('${cotizacion.id_cotizacion}')"
                         class="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded text-sm transition-colors"
                     >
                         Ver PDF
                     </button>
                     <button 
-                        onclick="eliminarCotizacion('${cotizacion.id}')"
+                        onclick="eliminarCotizacion('${cotizacion.id_cotizacion}')"
                         class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded text-sm transition-colors"
                     >
                         <i class="fas fa-trash"></i>
@@ -81,9 +79,9 @@ function cerrarModalEliminar() {
     cotizacionAEliminar = null;
 }
 
-function confirmarEliminar() {
+async function confirmarEliminar() {
     if (cotizacionAEliminar) {
-        db.eliminarCotizacion(cotizacionAEliminar);
+        await window.api.eliminarCotizacion(cotizacionAEliminar);
         cargarCotizaciones();
         cerrarModalEliminar();
     }
