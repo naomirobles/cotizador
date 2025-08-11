@@ -114,6 +114,16 @@ ipcMain.handle('eliminar-cotizacion', (event, id) => {
   });
 });
 
+ipcMain.handle('actualizar-cotizacion', (event, empresa, fecha, nombre_contacto, telefono, email, proyecto_servicio, id_cotizacion) => {
+  return new Promise((resolve, reject) => {
+    db.run(`UPDATE Cotizaciones SET empresa = ?, fecha = ?, nombre_contacto = ?, telefono = ?, email = ?, proyecto_servicio = ? WHERE id_cotizacion = ?`, 
+    [empresa, fecha, nombre_contacto, telefono, email, proyecto_servicio, id_cotizacion], function(err) {
+      if (err) reject(err);
+      else resolve(this.lastID);
+    });
+  });
+});
+
 // Tabla productos 
 ipcMain.handle('agregar-producto', (event, id_cotizacion, precio_unitario, concepto, unidades, imagen = null) => {
   return new Promise((resolve, reject) => {
@@ -143,15 +153,14 @@ ipcMain.handle('obtener-producto-id', (event, id) => {
   });
 });
 
-ipcMain.handle('eliminar-producto', (event, id) => {
+ipcMain.handle('eliminar-productos-cotizacion', (event, id_cotizacion) => {
   return new Promise((resolve, reject) => {
-    db.run(`DELETE FROM Productos WHERE id_producto = ?`, [id], function(err) {
+    db.run(`DELETE FROM Productos WHERE id_cotizacion = ?`, [id_cotizacion], function(err) {
       if (err) reject(err);
       else resolve(this.changes);
     });
   });
 });
-
 // FUNCIÓN DE SELECCIONAR IMAGEN --------------------------------------
 ipcMain.handle('select-image', async () => {
   try {

@@ -75,14 +75,19 @@ async function agregar_cotizacion(event) {
     
     try {
         // Guardar cotización
-        const cotizacionId = await window.api.agregarCotizacion(
-            nombre_empresa, fecha, nombre_contacto, telefono, email, proyecto_servicio
-        );
-        
-        // Guardar productos
-        await guardarProductos(cotizacionId);
-        
-        alert('Cotización guardada exitosamente');
+        if (isEditing) {
+            await window.api.actualizarCotizacion(nombre_empresa, fecha, nombre_contacto, telefono, email, proyecto_servicio, editingId);
+            alert('Cotización actualizada exitosamente');
+
+            await window.api.eliminarProductosCotizacion(editingId);
+            await guardarProductos(editingId);
+        } else {
+            const cotizacionId = await window.api.agregarCotizacion(
+                nombre_empresa, fecha, nombre_contacto, telefono, email, proyecto_servicio
+            );
+            await guardarProductos(cotizacionId);
+            alert('Cotización guardada exitosamente');
+        }        
         
         // Redirigir a la página principal
         window.location.href = 'index.html';
@@ -270,9 +275,9 @@ function agregarItem(datosItem = null) {
     
     // Si hay datos de imagen, mostrar preview
     if (hasImage) {
-        setTimeout(() => {
-            mostrarPreviewImagen(itemCounter, datosItem.imagen);
-        }, 100);
+        console.log('El itemcounter es: ',itemCounter)
+        console.log('Mostrando preview de imagen para item:', itemCounter, datosItem.imagen);
+        mostrarPreviewImagen(itemCounter, datosItem.imagen);
     }
     
     mostrarMensajeNoProductos();
@@ -378,6 +383,8 @@ async function mostrarPreviewImagen(itemId, fileName) {
         
         // Buscar si ya existe un preview
         let previewContainer = document.querySelector(`#preview-container-${itemId}`);
+        console.log('El id del item es: ',itemId)
+        console.log('Preview container existente:', previewContainer);
         
         if (!previewContainer) {
             // Crear contenedor de preview
