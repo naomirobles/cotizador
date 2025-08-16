@@ -6,11 +6,11 @@
     <title>Seleccionar Celda de Excel</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 p-4">
-    <div class="max-w-full mx-auto">
-        <!-- Header con información -->
-        <div class="mb-4 bg-white p-4 rounded-lg shadow-md">
-            <h2 class="text-xl font-semibold text-gray-800 mb-2">
+<body class="bg-gray-100 p-2 h-screen overflow-hidden">
+    <div class="h-screen flex flex-col">
+        <!-- Header con información - compacto -->
+        <div class="flex-shrink-0 mb-3 bg-white p-3 rounded-lg shadow-md">
+            <h2 class="text-lg font-semibold text-gray-800 mb-1">
                 Hoja: <span id="sheetName" class="text-blue-600">-</span>
             </h2>
             <p class="text-sm text-gray-600">
@@ -18,10 +18,10 @@
             </p>
         </div>
 
-        <!-- Tabla -->
-        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
-            <div class="overflow-auto max-h-96">
-                <table class="w-full">
+        <!-- Tabla - ocupa todo el espacio disponible -->
+        <div class="flex-1 bg-white rounded-lg shadow-lg overflow-hidden">
+            <div class="h-full overflow-auto">
+                <table class="w-full h-full">
                     <thead class="bg-gray-50 sticky top-0">
                         <tr id="tableHeader">
                             <!-- Los headers se generarán dinámicamente -->
@@ -34,23 +34,36 @@
             </div>
         </div>
 
-        <!-- Mensaje de carga -->
-        <div id="loading" class="text-center py-8">
-            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <p class="mt-2 text-gray-600">Cargando datos...</p>
+        <!-- Mensaje de carga - posicionado absolutamente -->
+        <div id="loading" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-90">
+            <div class="text-center">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <p class="mt-2 text-gray-600">Cargando datos...</p>
+            </div>
         </div>
 
-        <!-- Mensaje si no hay datos -->
-        <div id="noData" class="text-center py-8 hidden">
-            <p class="text-gray-500">No hay datos para mostrar en esta hoja.</p>
+        <!-- Mensaje si no hay datos - posicionado absolutamente -->
+        <div id="noData" class="absolute inset-0 flex items-center justify-center bg-white hidden">
+            <div class="text-center">
+                <div class="text-gray-400 mb-4">
+                    <svg class="w-16 h-16 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V8zm0 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2z" clip-rule="evenodd"></path>
+                    </svg>
+                </div>
+                <p class="text-gray-500 text-lg">No hay datos para mostrar en esta hoja.</p>
+            </div>
         </div>
     </div>
 
     <script>
         let currentData = null;
 
+        console.log('Script excel-render.html cargado');
+
         // Función para generar la tabla
         function generateTable(data, sheetName) {
+            console.log('Generando tabla con datos:', data ? data.length : 0, 'filas, hoja:', sheetName);
+            
             const tableHeader = document.getElementById('tableHeader');
             const tableBody = document.getElementById('tableBody');
             const loadingDiv = document.getElementById('loading');
@@ -58,7 +71,7 @@
             const sheetNameSpan = document.getElementById('sheetName');
             
             // Actualizar nombre de hoja
-            sheetNameSpan.textContent = sheetName;
+            sheetNameSpan.textContent = sheetName || 'Sin nombre';
             
             // Limpiar contenido previo
             tableHeader.innerHTML = '';
@@ -83,10 +96,12 @@
             // Generar headers numerados (Col A, Col B, etc. como Excel)
             for (let i = 0; i < maxColumns; i++) {
                 const th = document.createElement('th');
-                th.className = 'px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200 last:border-r-0';
+                th.className = 'px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200 last:border-r-0 bg-gray-50 sticky top-0';
                 th.textContent = getExcelColumnName(i);
                 tableHeader.appendChild(th);
             }
+
+            console.log('Headers generados:', maxColumns, 'columnas');
 
             // Generar filas de datos
             data.forEach((rowData, rowIndex) => {
@@ -98,7 +113,7 @@
                 // Crear celdas para cada columna
                 for (let colIndex = 0; colIndex < maxColumns; colIndex++) {
                     const td = document.createElement('td');
-                    td.className = 'px-4 py-3 whitespace-nowrap text-sm text-gray-900 cursor-pointer hover:bg-blue-100 transition-colors duration-150 border-r border-gray-100 last:border-r-0 max-w-xs truncate';
+                    td.className = 'px-3 py-2 text-sm text-gray-900 cursor-pointer hover:bg-blue-100 transition-colors duration-150 border-r border-gray-100 last:border-r-0 max-w-xs truncate';
                     
                     const cellData = rowData[colIndex] !== undefined && rowData[colIndex] !== null ? String(rowData[colIndex]) : '';
                     td.textContent = cellData;
@@ -106,7 +121,7 @@
                     
                     // Solo agregar evento de clic si la celda no está vacía
                     if (cellData.trim() !== '') {
-                        td.addEventListener('click', () => selectCell(cellData, rowIndex, colIndex));
+                        td.addEventListener('click', (e) => selectCell(cellData, rowIndex, colIndex, e));
                         td.classList.add('hover:bg-blue-100');
                     } else {
                         td.className += ' bg-gray-50 cursor-default hover:bg-gray-50';
@@ -117,6 +132,8 @@
 
                 tableBody.appendChild(row);
             });
+
+            console.log('Tabla generada con', data.length, 'filas');
         }
 
         // Función para convertir índice de columna a nombre de Excel (A, B, C, ..., AA, AB, etc.)
@@ -130,7 +147,9 @@
         }
 
         // Función para manejar la selección de celda
-        function selectCell(value, row, col) {
+        function selectCell(value, row, col, event) {
+            console.log('Celda seleccionada:', value, 'en posición', row, col);
+            
             // Crear objeto con información de la celda seleccionada
             const cellData = {
                 value: value,
@@ -142,146 +161,47 @@
 
             // Efecto visual
             const allCells = document.querySelectorAll('td');
-            allCells.forEach(cell => cell.classList.remove('bg-green-200'));
+            allCells.forEach(cell => {
+                cell.classList.remove('bg-green-200', 'bg-blue-200');
+            });
             
-            event.target.classList.add('bg-green-200');
-            event.target.classList.remove('hover:bg-blue-100');
+            if (event && event.target) {
+                event.target.classList.add('bg-green-200');
+                event.target.classList.remove('hover:bg-blue-100');
+            }
 
             // Enviar al proceso principal
-            if (window.api) {
-                console.log('Celda seleccionada:', cellData);
+            if (window.api && window.api.sendSelectedCell) {
+                console.log('Enviando celda seleccionada al proceso principal');
                 window.api.sendSelectedCell(cellData);
+            } else {
+                console.error('API no disponible para enviar celda seleccionada');
             }
         }
 
         // Escuchar datos del proceso principal
-        if (window.api) {
+        if (window.api && window.api.onLoadSheetData) {
+            console.log('Configurando listener para datos de hoja');
             window.api.onLoadSheetData((data) => {
+                console.log('Datos recibidos del proceso principal:', data);
                 currentData = data.data;
                 generateTable(currentData, data.sheetName);
             });
+        } else {
+            console.error('API no disponible');
+            // Mostrar mensaje de error
+            document.getElementById('loading').innerHTML = `
+                <div class="text-center py-8 text-red-600">
+                    <p>Error: API no disponible</p>
+                    <p class="text-sm">La comunicación con Electron no está funcionando</p>
+                </div>
+            `;
         }
 
-        // Para testing sin Electron
-        if (!window.api) {
-            // Datos de ejemplo para testing
-            const testData = [
-                ['Nombre', 'Edad', 'Ciudad'],
-                ['Juan', 25, 'Madrid'],
-                ['María', 30, 'Barcelona'],
-                ['Carlos', 35, 'Valencia']
-            ];
-            generateTable(testData, 'Hoja1');
-        }
-    </script>
-</body>
-</html>
-
-        // Función para generar la tabla
-        function generateTable(data) {
-            if (!data || data.length === 0) return;
-
-            const tableHeader = document.getElementById('tableHeader');
-            const tableBody = document.getElementById('tableBody');
-            
-            // Limpiar contenido previo
-            tableHeader.innerHTML = '';
-            tableBody.innerHTML = '';
-
-            // Calcular el número máximo de columnas
-            const maxColumns = Math.max(...data.map(row => row.length));
-
-            // Generar headers numerados (Col 1, Col 2, etc.)
-            for (let i = 0; i < maxColumns; i++) {
-                const th = document.createElement('th');
-                th.className = 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider';
-                th.textContent = `Col ${i + 1}`;
-                tableHeader.appendChild(th);
-            }
-
-            // Generar filas de datos
-            data.forEach((rowData, rowIndex) => {
-                const row = document.createElement('tr');
-                row.className = 'hover:bg-gray-50 transition-colors duration-150';
-
-                // Crear celdas para cada columna (rellenar con vacío si no hay dato)
-                for (let colIndex = 0; colIndex < maxColumns; colIndex++) {
-                    const td = document.createElement('td');
-                    td.className = 'px-6 py-4 whitespace-nowrap text-sm text-gray-900 cursor-pointer hover:bg-blue-100 transition-colors duration-150 border-r border-gray-100 last:border-r-0';
-                    
-                    const cellData = rowData[colIndex] !== undefined ? rowData[colIndex] : '';
-                    td.textContent = cellData;
-                    
-                    // Solo agregar evento de clic si la celda no está vacía
-                    if (cellData !== '') {
-                        td.addEventListener('click', () => selectCell(cellData, rowIndex, colIndex));
-                    } else {
-                        td.className += ' bg-gray-50 cursor-default';
-                    }
-                    
-                    row.appendChild(td);
-                }
-
-                tableBody.appendChild(row);
-            });
-        }
-
-        // Función para manejar la selección de celda
-        function selectCell(value, row, col) {
-            // Llenar el input con el valor seleccionado
-            document.getElementById('selectedValue').value = value;
-            
-            // Mostrar información de la celda seleccionada
-            const cellInfo = document.getElementById('cellInfo');
-            const cellPosition = document.getElementById('cellPosition');
-            const cellValue = document.getElementById('cellValue');
-            
-            cellPosition.textContent = `Fila ${row + 1}, Columna ${col + 1}`;
-            cellValue.textContent = value;
-            cellInfo.classList.remove('hidden');
-
-            // Efecto visual temporal
-            const allCells = document.querySelectorAll('td');
-            allCells.forEach(cell => cell.classList.remove('bg-blue-200'));
-            
-            event.target.classList.add('bg-blue-200');
-            setTimeout(() => {
-                event.target.classList.remove('bg-blue-200');
-            }, 1000);
-
-            // Si estás en Electron, puedes enviar el valor al proceso principal
-            if (window.api) {
-                window.api.sendSelectedValue({
-                    value: value,
-                    row: row,
-                    column: col
-                });
-            }
-
-            console.log('Celda seleccionada:', {
-                value: value,
-                row: row,
-                column: col
-            });
-        }
-
-        // Función para actualizar los datos desde Electron
-        function updateTableData(newData) {
-            generateTable(newData);
-        }
-
-        // Exponer funciones globalmente para Electron
-        window.updateTableData = updateTableData;
-        window.selectCell = selectCell;
-
-        // Inicializar la tabla con datos de ejemplo
-        generateTable(dataArray);
-
-        // Si estás en Electron, puedes escuchar datos del proceso principal
+        // Log para debug
+        console.log('window.api disponible:', !!window.api);
         if (window.api) {
-            window.api.onTableData((data) => {
-                updateTableData(data);
-            });
+            console.log('Métodos disponibles:', Object.keys(window.api));
         }
     </script>
 </body>

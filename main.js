@@ -274,18 +274,24 @@ ipcMain.handle('select-and-parse-excel', () => {
 
 let excelWindow = null;
 let resolveSelection = null; // Para resolver la promesa cuando se seleccione una celda
-
-ipcMain.handle('importar-datos-excel', (sheetDataMap, currentSheetName) => {
+ipcMain.handle('importar-datos-excel', async (event, sheetDataMap, currentSheetName) => {
   return new Promise((resolve, reject) => {
     try {
+      // Cerrar ventana existente si hay una
+      if (excelWindow && !excelWindow.isDestroyed()) {
+        excelWindow.close();
+        excelWindow = null;
+      }
+
       excelWindow = new BrowserWindow({
-        width: 800,
-        height: 600,
+        width: 1000,
+        height: 700,
         webPreferences: {
           preload: path.join(__dirname, 'preload.js'),
           contextIsolation: true,
-          enableRemoteModule: false
-        }
+          nodeIntegration: false
+        },
+        show: false // No mostrar hasta que esté listo
       });
 
       // Guardar el resolve para usarlo cuando se seleccione una celda
@@ -296,37 +302,54 @@ ipcMain.handle('importar-datos-excel', (sheetDataMap, currentSheetName) => {
 
       // Cuando la ventana esté lista, enviar los datos
       excelWindow.webContents.once('did-finish-load', () => {
+        console.log('Ventana Excel cargada, enviando datos...');
+        
         const sheetData = sheetDataMap[currentSheetName] || [];
+        console.log('Enviando datos de hoja:', currentSheetName, 'Filas:', sheetData.length);
+        
         excelWindow.webContents.send('load-sheet-data', {
           data: sheetData,
           sheetName: currentSheetName
         });
+        
+        // Mostrar la ventana después de cargar los datos
+        excelWindow.show();
       });
 
       // Manejar cierre de ventana sin selección
       excelWindow.on('closed', () => {
+        console.log('Ventana Excel cerrada');
         if (resolveSelection) {
-          resolveSelection(null); // Retornar null si se cierra sin seleccionar
+          resolveSelection(null);
           resolveSelection = null;
         }
         excelWindow = null;
       });
 
+      // Manejar errores de carga
+      excelWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+        console.error('Error al cargar ventana Excel:', errorCode, errorDescription);
+        reject(new Error(`Error al cargar: ${errorDescription}`));
+      });
+
     } catch (error) {
+      console.error('Error en importar-datos-excel:', error);
       reject(error);
     }
   });
 });
 
-// Manejar selección de celda
-ipcMain.on('cell-selected', (cellData) => {
+// También corrige el handler de selección de celda
+ipcMain.on('cell-selected', (event, cellData) => {
+  console.log('Celda seleccionada recibida:', cellData);
+  
   if (resolveSelection) {
-    resolveSelection(cellData); // Resolver la promesa con los datos de la celda
+    resolveSelection(cellData);
     resolveSelection = null;
   }
   
   // Cerrar la ventana después de la selección
-  if (excelWindow) {
+  if (excelWindow && !excelWindow.isDestroyed()) {
     excelWindow.close();
   }
 });

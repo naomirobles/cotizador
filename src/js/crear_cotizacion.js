@@ -701,10 +701,58 @@ async function seleccionarArchivoExcel() {
 }
 
 async function importarCampo(campoNombre) {
+  console.log('Importando campo:', campoNombre);
+  
   if (!window.sheetDataMap || !window.currentSheetName) {
     alert('Primero seleccione un archivo y una hoja de Excel');
     return;
   }
 
-  await window.api.importarDatosExcel(window.sheetDataMap, window.currentSheetName);
+  try {
+    console.log('Llamando a importarDatosExcel con:', window.currentSheetName);
+    
+    // Llamar a la función que abre la ventana y esperar el resultado
+    const cellData = await window.api.importarDatosExcel(window.sheetDataMap, window.currentSheetName);
+    
+    if (cellData && cellData.value !== undefined) {
+      console.log('Datos de celda recibidos:', cellData);
+      
+      // Buscar el campo y asignar el valor
+      const campo = document.getElementById(campoNombre) || document.querySelector(`[name="${campoNombre}"]`);
+      
+      if (campo) {
+        campo.value = cellData.value;
+        console.log('Valor asignado al campo:', campoNombre, '=', cellData.value);
+        
+        // Si es un campo de precio o unidades, recalcular total
+        if (campoNombre.includes('precio_') || campoNombre.includes('unidades_')) {
+          calcularTotal();
+        }
+        
+        // Mostrar confirmación
+        alert(`Valor importado: "${cellData.value}" desde celda ${cellData.address}`);
+      } else {
+        console.error('Campo no encontrado:', campoNombre);
+        alert('Error: No se pudo encontrar el campo destino');
+      }
+    } else {
+      console.log('No se seleccionó ninguna celda o se canceló');
+    }
+  } catch (error) {
+    console.error('Error al importar campo:', error);
+    alert('Error al importar datos: ' + (error.message || error));
+  }
+}
+
+// También agrega esta función de debug para verificar el estado:
+function debugExcelState() {
+  console.log('Estado de Excel:');
+  console.log('- sheetDataMap:', !!window.sheetDataMap);
+  console.log('- currentSheetName:', window.currentSheetName);
+  console.log('- API disponible:', !!window.api);
+  
+  if (window.sheetDataMap && window.currentSheetName) {
+    const data = window.sheetDataMap[window.currentSheetName];
+    console.log('- Datos de hoja actual:', data ? data.length + ' filas' : 'No data');
+  }
 }
