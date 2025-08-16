@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron'); // ← AGREGAR dialog aquí
 const path = require('path');
 const fs = require('fs');
+const XLSX = require('xlsx');
 //SQLITE UWU
 const sqlite3 = require('sqlite3').verbose();
 
@@ -54,6 +55,7 @@ db.serialize(() => {
     CREATE TABLE IF NOT EXISTS Productos(
       id_producto INTEGER PRIMARY KEY AUTOINCREMENT,
       id_cotizacion INTEGER NOT NULL,
+      nombre_producto TEXT NOT NULL,
       precio_unitario REAL NOT NULL, 
       concepto TEXT NOT NULL,
       unidades INTEGER NOT NULL,
@@ -125,10 +127,10 @@ ipcMain.handle('actualizar-cotizacion', (event, empresa, fecha, nombre_contacto,
 });
 
 // Tabla productos 
-ipcMain.handle('agregar-producto', (event, id_cotizacion, precio_unitario, concepto, unidades, imagen = null) => {
+ipcMain.handle('agregar-producto', (event, id_cotizacion, nombre_producto, precio_unitario, concepto, unidades, imagen = null) => {
   return new Promise((resolve, reject) => {
-    db.run(`INSERT INTO Productos (id_cotizacion, precio_unitario, concepto, unidades, imagen) VALUES (?, ?, ?, ?, ?)`, 
-    [id_cotizacion, precio_unitario, concepto, unidades, imagen], function(err) {
+    db.run(`INSERT INTO Productos (id_cotizacion, nombre_producto, precio_unitario, concepto, unidades, imagen) VALUES (?, ?, ?, ?, ?, ?)`, 
+    [id_cotizacion, nombre_producto, precio_unitario, concepto, unidades, imagen], function(err) {
       if (err) reject(err);
       else resolve(this.lastID);
     });
@@ -226,4 +228,105 @@ ipcMain.handle('image-exists', (event, fileName) => {
   const exists = fs.existsSync(imagePath);
   console.log('Verificando si existe:', imagePath, 'Resultado:', exists);
   return exists;
+});
+
+// IPC handler para seleccionar archivo Excel y devolver { name, base64 }
+ipcMain.handle('select-and-parse-excel', () => {
+  try {
+    const result = dialog.showOpenDialogSync({
+      title: 'Seleccionar archivo Excel',
+      properties: ['openFile'],
+      filters: [
+        { name: 'Excel/CSV', extensions: ['xlsx', 'xls', 'csv'] },
+        { name: 'Todos',    extensions: ['*'] }
+      ]
+    });
+
+    if (!result || result.length === 0) {
+      return null; // usuario canceló
+    }
+
+    const filePath = result[0];
+    const name = path.basename(filePath);
+
+    // Leer archivo como Buffer de forma sincrónica
+    const buffer = fs.readFileSync(filePath);
+
+    // Parsear workbook usando SheetJS
+    const wb = XLSX.read(buffer, { type: 'buffer' });
+
+    // Convertir cada hoja a array-of-arrays (AOA)
+    const sheetDataMap = {};
+    wb.SheetNames.forEach(sheetName => {
+      const sheet = wb.Sheets[sheetName];
+      const aoa = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false });
+      sheetDataMap[sheetName] = aoa;
+    });
+
+    // Devolver al renderer
+    return { name, sheetNames: wb.SheetNames, sheetDataMap };
+
+  } catch (err) {
+    console.error('Error en select-and-parse-excel:', err);
+    return { error: err.message || String(err) };
+  }
+});
+
+let excelWindow = null;
+let resolveSelection = null; // Para resolver la promesa cuando se seleccione una celda
+
+ipcMain.handle('importar-datos-excel', (sheetDataMap, currentSheetName) => {
+  return new Promise((resolve, reject) => {
+    try {
+      excelWindow = new BrowserWindow({
+        width: 800,
+        height: 600,
+        webPreferences: {
+          preload: path.join(__dirname, 'preload.js'),
+          contextIsolation: true,
+          enableRemoteModule: false
+        }
+      });
+
+      // Guardar el resolve para usarlo cuando se seleccione una celda
+      resolveSelection = resolve;
+
+      // Cargar el archivo HTML
+      excelWindow.loadFile('src/excel-render.html');
+
+      // Cuando la ventana esté lista, enviar los datos
+      excelWindow.webContents.once('did-finish-load', () => {
+        const sheetData = sheetDataMap[currentSheetName] || [];
+        excelWindow.webContents.send('load-sheet-data', {
+          data: sheetData,
+          sheetName: currentSheetName
+        });
+      });
+
+      // Manejar cierre de ventana sin selección
+      excelWindow.on('closed', () => {
+        if (resolveSelection) {
+          resolveSelection(null); // Retornar null si se cierra sin seleccionar
+          resolveSelection = null;
+        }
+        excelWindow = null;
+      });
+
+    } catch (error) {
+      reject(error);
+    }
+  });
+});
+
+// Manejar selección de celda
+ipcMain.on('cell-selected', (cellData) => {
+  if (resolveSelection) {
+    resolveSelection(cellData); // Resolver la promesa con los datos de la celda
+    resolveSelection = null;
+  }
+  
+  // Cerrar la ventana después de la selección
+  if (excelWindow) {
+    excelWindow.close();
+  }
 });

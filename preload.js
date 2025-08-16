@@ -11,13 +11,21 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.invoke('actualizar-cotizacion', empresa, fecha, nombre_contacto, telefono, email, proyecto_servicio, id_cotizacion),
 
   // Productos
-  agregarProducto: (id_cotizacion, precio_unitario, concepto, unidades, imagen) =>
-  ipcRenderer.invoke('agregar-producto', id_cotizacion, precio_unitario, concepto, unidades, imagen),
+  agregarProducto: (id_cotizacion, nombre_producto, precio_unitario, concepto, unidades, imagen) =>
+  ipcRenderer.invoke('agregar-producto', id_cotizacion, nombre_producto, precio_unitario, concepto, unidades, imagen),
   obtenerProductos: (id_cotizacion) => ipcRenderer.invoke('obtener-productos', id_cotizacion),
   eliminarProductosCotizacion: (id_cotizacion) => ipcRenderer.invoke('eliminar-productos-cotizacion', id_cotizacion),
 
   // Utilidades
   selectImage: () => ipcRenderer.invoke('select-image'),
   getImagePath: (fileName) => ipcRenderer.invoke('get-image-path', fileName),
-  imageExists: (fileName) => ipcRenderer.invoke('image-exists', fileName)
+  imageExists: (fileName) => ipcRenderer.invoke('image-exists', fileName),
+
+  //Excel
+  selectAndParseExcel: () => ipcRenderer.invoke('select-and-parse-excel'),
+  importarDatosExcel: (sheetDataMap, currentSheetName) => ipcRenderer.invoke('importar-datos-excel', sheetDataMap, currentSheetName),
+  onLoadSheetData: (callback) => {
+    ipcRenderer.on('load-sheet-data', (event, data) => callback(data));
+  },  
+  sendSelectedCell: (cellData) => ipcRenderer.send('cell-selected', cellData),
 });

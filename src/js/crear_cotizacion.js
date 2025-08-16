@@ -112,7 +112,7 @@ async function guardarProductos(cotizacionId) {
         
         if (nombreProducto && concepto && unidades > 0 && precio > 0) {
             try {
-                await window.api.agregarProducto(cotizacionId, precio, concepto, unidades, imagen);
+                await window.api.agregarProducto(cotizacionId, nombreProducto, precio, concepto, unidades, imagen);
                 console.log('Producto guardado:', { nombreProducto, concepto, unidades, precio, imagen });
             } catch (error) {
                 console.error('Error al guardar producto:', error);
@@ -149,7 +149,7 @@ async function cargarCotizacionParaEditar(cotizacionId) {
         if (productos && productos.length > 0) {
             productos.forEach(producto => {
                 const datosItem = {
-                    nombre_producto: producto.concepto || 'Producto',
+                    nombre_producto: producto.nombre_producto || 'Producto',
                     concepto: producto.concepto || '',
                     unidades: producto.unidades || 0,
                     precio_unitario: producto.precio_unitario || 0,
@@ -186,89 +186,139 @@ function agregarItem(datosItem = null) {
     const buttonClass = hasImage ? 'bg-blue-500 hover:bg-blue-600' : 'bg-green-500 hover:bg-green-600';
     const buttonText = hasImage ? '<i class="fas fa-check"></i> <span>Imagen agregada</span>' : '<i class="fas fa-image"></i> <span>Agregar imagen</span>';
 
-    row.innerHTML = `
-        <td class="py-3 px-2">
-            <input 
-                type="text" 
-                name="nombre_producto_${itemCounter}"
-                value="${datosItem ? (datosItem.nombre_producto || '') : ''}"
-                class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 text-sm"
-                placeholder="Nombre del producto"
-            >
-        </td>
-        <td class="py-3 px-2">
-            <input 
-                type="text" 
-                name="concepto_${itemCounter}"
-                value="${datosItem ? (datosItem.concepto || '') : ''}"
-                class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 text-sm"
-                placeholder="Descripción"
-            >
-        </td>
-        <td class="py-3 px-2">
-            <input 
-                type="number" 
-                name="unidades_${itemCounter}"
-                value="${datosItem ? (datosItem.unidades || '') : ''}"
-                class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 text-sm"
-                placeholder="0"
-                min="1"
-                onchange="calcularTotal()"
-            >
-        </td>
-        <td class="py-3 px-2">
-            <input 
-                type="number" 
-                name="precio_${itemCounter}"
-                value="${datosItem ? (datosItem.precio_unitario || '') : ''}"
-                step="0.01"
-                class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 text-sm"
-                placeholder="0.00"
-                min="0"
-                onchange="calcularTotal()"
-            >
-        </td>
-        <td class="py-3 px-2">
-            <div class="flex flex-col space-y-2">
-                <button 
-                    type="button" 
-                    onclick="seleccionarImagen(${itemCounter})"
-                    class="${buttonClass} text-white px-3 py-1 rounded text-sm flex items-center space-x-1 transition-colors"
-                    title="${hasImage ? `Imagen: ${datosItem.imagen}` : 'Seleccionar imagen'}"
-                >
-                    ${buttonText}
-                </button>
-                ${hasImage ? `
-                <button 
-                    type="button" 
-                    onclick="eliminarImagen(${itemCounter})"
-                    class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs"
-                    title="Eliminar imagen"
-                >
-                    <i class="fas fa-trash"></i>
-                </button>
-                ` : ''}
-            </div>
-            <input type="hidden" name="imagen_${itemCounter}" value="${datosItem ? (datosItem.imagen || '') : ''}">
-        </td>
-        <td class="py-3 px-2 text-center">
-            <button 
-                type="button" 
-                onclick="agregarItem()"
-                class="bg-green-500 hover:bg-green-600 text-white w-8 h-8 rounded-full mr-2 transition-colors"
-                title="Agregar fila"
-            >
-                <i class="fas fa-plus text-sm"></i>
-            </button>
-            <button 
-                type="button" 
-                onclick="eliminarItem(${itemCounter})"
-                class="bg-red-500 hover:bg-red-600 text-white w-8 h-8 rounded-full transition-colors"
-                title="Eliminar fila"
-            >
-                <i class="fas fa-minus text-sm"></i>
-            </button>
-        </td>
+    row.innerHTML =`
+         <td class="py-1 px-1 text-sm align-top">
+    <div class="flex space-x-1 items-center">
+      <input
+        type="text"
+        name="nombre_producto_${itemCounter}"
+        value="${datosItem ? (datosItem.nombre_producto || '') : ''}"
+        class="min-w-0 max-w-xs px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 text-sm truncate"
+        placeholder="Nombre del producto"
+      >
+      <button
+        type="button"
+        onclick="importarCampo('nombre_producto_${itemCounter}')"
+        class="w-7 h-7 flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white rounded text-xs transition-colors"
+        title="Importar desde Excel"
+      >
+        <i class="fas fa-download"></i>
+      </button>
+    </div>
+  </td>
+
+  <td class="py-1 px-1 text-sm align-top">
+    <div class="flex space-x-1 items-center">
+      <input
+        type="text"
+        name="concepto_${itemCounter}"
+        value="${datosItem ? (datosItem.concepto || '') : ''}"
+        class="min-w-0 max-w-md px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 text-sm truncate"
+        placeholder="Descripción"
+      >
+      <button
+        type="button"
+        onclick="importarCampo('concepto_${itemCounter}')"
+        class="w-7 h-7 flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white rounded text-xs transition-colors"
+        title="Importar desde Excel"
+      >
+        <i class="fas fa-download"></i>
+      </button>
+    </div>
+  </td>
+
+  <td class="py-1 px-1 text-sm align-top">
+    <div class="flex space-x-1 items-center">
+      <input
+        type="number"
+        name="unidades_${itemCounter}"
+        value="${datosItem ? (datosItem.unidades || '') : ''}"
+        class="min-w-0 w-20 px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 text-sm text-center"
+        placeholder="0"
+        min="1"
+        onchange="calcularTotal()"
+      >
+      <button
+        type="button"
+        onclick="importarCampo('unidades_${itemCounter}')"
+        class="w-7 h-7 flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white rounded text-xs transition-colors"
+        title="Importar desde Excel"
+      >
+        <i class="fas fa-download"></i>
+      </button>
+    </div>
+  </td>
+
+  <td class="py-1 px-1 text-sm align-top">
+    <div class="flex space-x-1 items-center">
+      <input
+        type="number"
+        name="precio_${itemCounter}"
+        value="${datosItem ? (datosItem.precio_unitario || '') : ''}"
+        step="0.01"
+        class="min-w-0 w-24 px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 text-sm text-right"
+        placeholder="0.00"
+        min="0"
+        onchange="calcularTotal()"
+      >
+      <button
+        type="button"
+        onclick="importarCampo('precio_${itemCounter}')"
+        class="w-7 h-7 flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white rounded text-xs transition-colors"
+        title="Importar desde Excel"
+      >
+        <i class="fas fa-download"></i>
+      </button>
+    </div>
+  </td>
+
+  <td class="py-1 px-1 text-sm align-top">
+    <div class="flex flex-col space-y-1 items-start">
+      <button
+        type="button"
+        onclick="seleccionarImagen(${itemCounter})"
+        class="${buttonClass} text-white px-3 py-1 rounded text-sm flex items-center space-x-1 transition-colors"
+        title="${hasImage ? `Imagen: ${datosItem.imagen}` : 'Seleccionar imagen'}"
+      >
+        ${buttonText}
+      </button>
+
+      ${hasImage ? `
+      <button
+        type="button"
+        onclick="eliminarImagen(${itemCounter})"
+        class="w-7 h-7 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white rounded text-xs"
+        title="Eliminar imagen"
+      >
+        <i class="fas fa-trash"></i>
+      </button>
+      ` : ''}
+    </div>
+
+    <input type="hidden" name="imagen_${itemCounter}" value="${datosItem ? (datosItem.imagen || '') : ''}">
+  </td>
+
+  <td class="py-1 px-1 text-center align-top">
+    <div class="flex items-center justify-center space-x-1">
+      <button
+        type="button"
+        onclick="agregarItem()"
+        class="bg-green-500 hover:bg-green-600 text-white w-7 h-7 rounded-full transition-colors"
+        title="Agregar fila"
+      >
+        <i class="fas fa-plus text-xs"></i>
+      </button>
+
+      <button
+        type="button"
+        onclick="eliminarItem(${itemCounter})"
+        class="bg-red-500 hover:bg-red-600 text-white w-7 h-7 rounded-full transition-colors"
+        title="Eliminar fila"
+      >
+        <i class="fas fa-minus text-xs"></i>
+      </button>
+    </div>
+  </td>
     `;
 
     tbody.appendChild(row);
@@ -524,3 +574,137 @@ setInterval(() => {
 setTimeout(() => {
     calcularTotal();
 }, 100);
+
+function indexToColumnLabel(index) {
+  let label = '';
+  let n = index + 1;
+  while (n > 0) {
+    const rem = (n - 1) % 26;
+    label = String.fromCharCode(65 + rem) + label;
+    n = Math.floor((n - 1) / 26);
+  }
+  return label;
+}
+
+/**
+ * Llena un <select> con columnas A..N mostrando un ejemplo (primer valor no vacío)
+ * aoa: array of arrays (sheetData)
+ * maxCols: número de columnas a generar
+ */
+function populateColumnSelect(selectElement, aoa, maxCols) {
+  if (!selectElement) return;
+  selectElement.innerHTML = '<option value="">Seleccionar...</option>';
+  for (let c = 0; c < maxCols; c++) {
+    const label = indexToColumnLabel(c);
+    let example = '';
+    for (let r = 0; r < Math.min(20, aoa.length); r++) {
+      if (aoa[r] && aoa[r][c] !== undefined && aoa[r][c] !== null && String(aoa[r][c]).trim() !== '') {
+        example = String(aoa[r][c]);
+        break;
+      }
+    }
+    const opt = document.createElement('option');
+    opt.value = label;
+    opt.textContent = example ? `${label} — ${example}` : `${label}`;
+    selectElement.appendChild(opt);
+  }
+}
+
+/**
+ * Función que se llama cuando cambia el select #hojaExcel
+ * Rellena los selects de columnas y (opcionalmente) un preview.
+ * Usa window.sheetDataMap si existe (creado por seleccionarArchivoExcel).
+ */
+function onHojaExcelChanged() {
+  const hojaSelect = document.getElementById('hojaExcel');
+  if (!hojaSelect) return;
+  const selected = hojaSelect.value;
+  if (!selected || !window.sheetDataMap || !window.sheetDataMap[selected]) {
+    // limpiar selects si no hay hoja
+    ['columnaExcel','columnaNombreProducto','columnaConcepto','columnaUnidades','columnaPrecio'].forEach(id => {
+      const s = document.getElementById(id);
+      if (s) s.innerHTML = '<option value="">Seleccionar...</option>';
+    });
+    return;
+  }
+
+  const aoa = window.sheetDataMap[selected];
+  // calcular máximo columnas (basado en filas presentes)
+  const maxCols = aoa.reduce((m, row) => Math.max(m, (row && row.length) || 0), 0) || 1;
+
+  // poblar selects si existen en el DOM
+  const idsToFill = [
+    'columnaExcel', 'columnaNombreProducto', 'columnaConcepto', 'columnaUnidades', 'columnaPrecio'
+  ];
+  idsToFill.forEach(id => {
+    const sel = document.getElementById(id);
+    if (sel) populateColumnSelect(sel, aoa, maxCols);
+  });
+
+  // Guardar nombre de hoja seleccionada en variable global si es necesario
+  window.currentSheetName = selected;
+}
+
+/* ----------------- Vinculación del evento change para #hojaExcel ----------------- */
+document.addEventListener('DOMContentLoaded', () => {
+  const hojaSelect = document.getElementById('hojaExcel');
+  if (hojaSelect) {
+    hojaSelect.addEventListener('change', onHojaExcelChanged);
+  }
+});
+
+// crear_cotizacion.js (fragmento, pega donde quieras)
+async function seleccionarArchivoExcel() {
+  try {
+    const res = await window.api.selectAndParseExcel();
+    if (!res) {
+      // usuario canceló
+      console.log('Selección cancelada');
+      return;
+    }
+    if (res.error) {
+      alert('Error al procesar el archivo: ' + res.error);
+      return;
+    }
+
+    // res: { name, sheetNames, sheetDataMap }
+    document.getElementById('archivoExcel').value = res.name;
+
+    // Guardar globalmente para otras funciones
+    window.sheetDataMap = res.sheetDataMap;
+    window.workbookSheetNames = res.sheetNames;
+
+    // Poblar select de hojas
+    const hojaSelect = document.getElementById('hojaExcel');
+    if (hojaSelect) {
+      hojaSelect.innerHTML = '<option value="">Seleccionar hoja...</option>';
+      res.sheetNames.forEach(n => {
+        const opt = document.createElement('option');
+        opt.value = n;
+        opt.textContent = n;
+        hojaSelect.appendChild(opt);
+      });
+      hojaSelect.disabled = false;
+      hojaSelect.value = res.sheetNames[0];
+    }
+
+    // Disparar la función que llena selects de columnas y preview
+    if (typeof onHojaExcelChanged === 'function') {
+      onHojaExcelChanged();
+    } else {
+      console.warn('onHojaExcelChanged no está definida');
+    }
+  } catch (err) {
+    console.error('Error en seleccionarArchivoExcel:', err);
+    alert('Error al seleccionar o procesar el archivo: ' + (err.message || err));
+  }
+}
+
+async function importarCampo(campoNombre) {
+  if (!window.sheetDataMap || !window.currentSheetName) {
+    alert('Primero seleccione un archivo y una hoja de Excel');
+    return;
+  }
+
+  await window.api.importarDatosExcel(window.sheetDataMap, window.currentSheetName);
+}
