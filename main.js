@@ -557,7 +557,7 @@ function generarHTMLCotizacion(datos) {
                         return `
                         <tr>
                             <td>${p.unidades}</td>
-                            <td><strong>${p.nombre}</strong><br>${p.concepto || ""}</td>
+                            <td><strong>${p.nombre_producto}</strong><br>${p.concepto || ""}</td>
                             ${tieneImagenes ? `<td>${imagenHTML}</td>` : ""}
                             <td>$${parseFloat(p.precio_unitario).toFixed(2)}</td>
                             <td>$${subtotalProducto}</td>
