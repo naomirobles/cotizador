@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', function() {
     mostrarMensajeNoProductos();
 });
 
+// Event listener para cargar imagen
 document.addEventListener('DOMContentLoaded', function() {
     const imageInput = document.getElementById('imageInput');
     if (imageInput) {
@@ -56,7 +57,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Función para agregar cotización (corregida)
+// Función para agregar cotización
 async function agregar_cotizacion(event) {
     event.preventDefault(); // Prevenir envío normal del formulario
     
@@ -158,7 +159,7 @@ async function cargarCotizacionParaEditar(cotizacionId) {
                 agregarItem(datosItem);
             });
         } else {
-            // Si no hay productos, agregar dos items por defecto
+            // Si no hay productos, agregar 1 item por defecto
             agregarItem();
 
         }

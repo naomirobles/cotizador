@@ -21,6 +21,11 @@ contextBridge.exposeInMainWorld('api', {
   getImagePath: (fileName) => ipcRenderer.invoke('get-image-path', fileName),
   imageExists: (fileName) => ipcRenderer.invoke('image-exists', fileName),
 
+  // generar PDF
+  generarPDF: (id) => ipcRenderer.invoke('generar-pdf-puppeteer', id),
+  abrirPDF: (filePath) => ipcRenderer.invoke('abrir-pdf', filePath),
+  numeroALetras: (numero) => {return `número convertido: ${numero}`;},
+
   //Excel
   selectAndParseExcel: () => ipcRenderer.invoke('select-and-parse-excel'),
   importarDatosExcel: (sheetDataMap, currentSheetName) => ipcRenderer.invoke('importar-datos-excel', sheetDataMap, currentSheetName),
