@@ -17,8 +17,8 @@
   "dependencies": {
     "@tailwindcss/cli": "^4.1.11",
     "electron": "^37.2.5",
-    "puppeteer": "^24.15.0",
-     "sqlite3": "^5.1.7"
+    "puppeteer": "^24.16.1",
+    "sqlite3": "^5.1.7"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.21",

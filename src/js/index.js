@@ -87,12 +87,27 @@ async function confirmarEliminar() {
     }
 }
 
-async function generarPDF(id) {
-    // Esta función se implementará con el generador de PDF
-    const cotizacion = db.obtenerCotizacion(id);
-    console.log('Generar PDF para:', cotizacion);
-    // TODO: Implementar generación de PDF
-    alert('Función de PDF en desarrollo');
+// Función para generar pdf
+async function generarPDF(id_cotizacion) {
+    try{
+        mostrarCargando('Generando PDF...');
+        console.log('Generando PDF para cotización: ',id_cotizacion);
+        const resultado = await window.api.generarPDF(id_cotizacion);
+        ocultarCargando();
+
+        if(resultado.success){
+
+            await window.api.abrirPDF(resultado.filePath);
+            // Mostrar notificación de éxito
+            mostrarNotificacion('PDF generado exitosamente', 'success');
+        }else{
+            throw new Error('Error al generar PDF.');
+        }
+    }catch (error) {
+        ocultarCargando();
+        console.error('Error al generar PDF:', error);
+        mostrarNotificacion('Error al generar PDF: ' + error.message, 'error');
+    }
 }
 
 // Búsqueda en tiempo real
@@ -109,3 +124,46 @@ document.getElementById('searchInput').addEventListener('input', function(e) {
         }
     });
 });
+
+// Función para mostrar indicador de carga
+function mostrarCargando(mensaje = 'Cargando...') {
+    const loader = document.createElement('div');
+    loader.id = 'pdf-loader';
+    loader.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    loader.innerHTML = `
+        <div class="bg-white p-6 rounded-lg shadow-lg flex items-center space-x-4">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            <span class="text-gray-700">${mensaje}</span>
+        </div>
+    `;
+    document.body.appendChild(loader);
+}
+
+function ocultarCargando() {
+    const loader = document.getElementById('pdf-loader');
+    if (loader) {
+        loader.remove();
+    }
+}
+
+// Función para mostrar notificaciones
+function mostrarNotificacion(mensaje, tipo = 'info') {
+    const colores = {
+        success: 'bg-green-500',
+        error: 'bg-red-500',
+        info: 'bg-blue-500',
+        warning: 'bg-yellow-500'
+    };
+
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 ${colores[tipo]} text-white p-4 rounded shadow-lg z-50 transform transition-all duration-300`;
+    notification.textContent = mensaje;
+    
+    document.body.appendChild(notification);
+    
+    // Remover después de 3 segundos
+    setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}

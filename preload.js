@@ -11,13 +11,18 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.invoke('actualizar-cotizacion', empresa, fecha, nombre_contacto, telefono, email, proyecto_servicio, id_cotizacion),
 
   // Productos
-  agregarProducto: (id_cotizacion, precio_unitario, concepto, unidades, imagen) =>
-  ipcRenderer.invoke('agregar-producto', id_cotizacion, precio_unitario, concepto, unidades, imagen),
+  agregarProducto: (id_cotizacion, precio_unitario,nombre, concepto, unidades, imagen) =>
+  ipcRenderer.invoke('agregar-producto', id_cotizacion, precio_unitario,nombre, concepto, unidades, imagen),
   obtenerProductos: (id_cotizacion) => ipcRenderer.invoke('obtener-productos', id_cotizacion),
   eliminarProductosCotizacion: (id_cotizacion) => ipcRenderer.invoke('eliminar-productos-cotizacion', id_cotizacion),
 
   // Utilidades
   selectImage: () => ipcRenderer.invoke('select-image'),
   getImagePath: (fileName) => ipcRenderer.invoke('get-image-path', fileName),
-  imageExists: (fileName) => ipcRenderer.invoke('image-exists', fileName)
+  imageExists: (fileName) => ipcRenderer.invoke('image-exists', fileName),
+
+  // generar PDF
+  generarPDF: (id) => ipcRenderer.invoke('generar-pdf-puppeteer', id),
+  abrirPDF: (filePath) => ipcRenderer.invoke('abrir-pdf', filePath),
+  numeroALetras: (numero) => {return `número convertido: ${numero}`;}
 });

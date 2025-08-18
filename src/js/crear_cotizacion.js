@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', function() {
     mostrarMensajeNoProductos();
 });
 
+// Event listener para cargar imagen
 document.addEventListener('DOMContentLoaded', function() {
     const imageInput = document.getElementById('imageInput');
     if (imageInput) {
@@ -56,7 +57,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Función para agregar cotización (corregida)
+// Función para agregar cotización
 async function agregar_cotizacion(event) {
     event.preventDefault(); // Prevenir envío normal del formulario
     
@@ -112,7 +113,7 @@ async function guardarProductos(cotizacionId) {
         
         if (nombreProducto && concepto && unidades > 0 && precio > 0) {
             try {
-                await window.api.agregarProducto(cotizacionId, precio, concepto, unidades, imagen);
+                await window.api.agregarProducto(cotizacionId, precio, nombreProducto, concepto, unidades, imagen);
                 console.log('Producto guardado:', { nombreProducto, concepto, unidades, precio, imagen });
             } catch (error) {
                 console.error('Error al guardar producto:', error);
@@ -149,7 +150,7 @@ async function cargarCotizacionParaEditar(cotizacionId) {
         if (productos && productos.length > 0) {
             productos.forEach(producto => {
                 const datosItem = {
-                    nombre_producto: producto.concepto || 'Producto',
+                    nombre_producto: producto.nombre|| 'Producto',
                     concepto: producto.concepto || '',
                     unidades: producto.unidades || 0,
                     precio_unitario: producto.precio_unitario || 0,
@@ -158,7 +159,7 @@ async function cargarCotizacionParaEditar(cotizacionId) {
                 agregarItem(datosItem);
             });
         } else {
-            // Si no hay productos, agregar dos items por defecto
+            // Si no hay productos, agregar 1 item por defecto
             agregarItem();
 
         }
@@ -524,3 +525,12 @@ setInterval(() => {
 setTimeout(() => {
     calcularTotal();
 }, 100);
+
+
+
+
+
+
+
+
+
