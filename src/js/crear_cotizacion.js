@@ -3,8 +3,12 @@ let currentImageRow = null;
 let isEditing = false;
 let editingId = null;
 
+// Event listener para el boton de cambiar hoja de Excel
+document.getElementById('hojaExcel').addEventListener('change', onHojaExcelChanged);
+
 // Inicializar formulario
 document.addEventListener('DOMContentLoaded', function() {
+  
     const cotizacionForm = document.getElementById('cotizacionForm');
     cotizacionForm.addEventListener('submit', agregar_cotizacion);
 
@@ -617,11 +621,13 @@ function populateColumnSelect(selectElement, aoa, maxCols) {
  * Usa window.sheetDataMap si existe (creado por seleccionarArchivoExcel).
  */
 function onHojaExcelChanged() {
+  console.log('Hoja Excel cambiada, actualizando selects de columnas');
   const hojaSelect = document.getElementById('hojaExcel');
   if (!hojaSelect) return;
   const selected = hojaSelect.value;
   if (!selected || !window.sheetDataMap || !window.sheetDataMap[selected]) {
     // limpiar selects si no hay hoja
+    console.warn('No hay hoja seleccionada o datos disponibles');
     ['columnaExcel','columnaNombreProducto','columnaConcepto','columnaUnidades','columnaPrecio'].forEach(id => {
       const s = document.getElementById(id);
       if (s) s.innerHTML = '<option value="">Seleccionar...</option>';
@@ -645,14 +651,6 @@ function onHojaExcelChanged() {
   // Guardar nombre de hoja seleccionada en variable global si es necesario
   window.currentSheetName = selected;
 }
-
-/* ----------------- Vinculación del evento change para #hojaExcel ----------------- */
-document.addEventListener('DOMContentLoaded', () => {
-  const hojaSelect = document.getElementById('hojaExcel');
-  if (hojaSelect) {
-    hojaSelect.addEventListener('change', onHojaExcelChanged);
-  }
-});
 
 // crear_cotizacion.js (fragmento, pega donde quieras)
 async function seleccionarArchivoExcel() {

@@ -26,7 +26,7 @@ function createWindow() {
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js')
     },
-    icon: path.join(__dirname, 'assets/icon.png'),
+    icon: 'assets/logo.png',
     show: false
   });
 
@@ -637,6 +637,7 @@ ipcMain.handle('generar-pdf-puppeteer', async (event, id_cotizacion) => {
         
         // Iniciar Puppeteer
         browser = await puppeteer.launch({
+            enableExtensions: true,
             headless: true,
             args: ['--no-sandbox', '--disable-setuid-sandbox']
         });
