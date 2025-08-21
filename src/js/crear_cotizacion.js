@@ -392,8 +392,8 @@ async function seleccionarImagen(itemId) {
             // Guardar nombre de archivo en input hidden
             const hiddenInput = document.querySelector(`input[name="imagen_${itemId}"]`);
             if (hiddenInput) {
-                hiddenInput.value = fileName;
-                console.log('Valor guardado en input hidden:', fileName);
+                hiddenInput.value = fileName.fileName;
+                console.log('Valor guardado en input hidden:', fileName.fileName);
             }
             
             // Cambiar apariencia del botón
@@ -402,11 +402,11 @@ async function seleccionarImagen(itemId) {
                 button.innerHTML = '<i class="fas fa-check"></i> <span>Imagen agregada</span>';
                 button.classList.remove('bg-green-500', 'hover:bg-green-600');
                 button.classList.add('bg-blue-500', 'hover:bg-blue-600');
-                button.title = `Imagen: ${fileName}`;
+                button.title = `Imagen: ${fileName.fileName}`;
             }
             
             // Mostrar preview
-            await mostrarPreviewImagen(itemId, fileName);
+            await mostrarPreviewImagen(itemId, fileName.fileName);
             
             alert('Imagen agregada exitosamente');
         } else {

@@ -729,7 +729,7 @@ function getSystemChromePath() {
   const platformPaths = chromePaths[process.platform] || chromePaths.linux;
   
   for (const chromePath of platformPaths) {
-    if (chromePath && fs.ex fs.existsSync(chromePath)) {
+    if (chromePath && fs.existsSync(chromePath)) {
       console.log('Chrome del sistema encontrado en:', chromePath);
       return chromePath;
     }
@@ -813,7 +813,7 @@ function formatearFechaEspanol(fechaString) {
 
 function getImagenBase64(nombreArchivo) {
     try {
-        const rutaImagen = path.resolve(__dirname, 'imagenes', nombreArchivo);
+        const rutaImagen = fileManager.getImagePath(nombreArchivo); ;
         const data = fs.readFileSync(rutaImagen);
         const extension = path.extname(nombreArchivo).substring(1); // "png" o "jpg"
         return `data:image/${extension};base64,${data.toString('base64')}`;
