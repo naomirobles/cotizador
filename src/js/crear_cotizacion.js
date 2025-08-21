@@ -3,6 +3,8 @@ let currentImageRow = null;
 let isEditing = false;
 let editingId = null;
 
+document.getElementById('hojaExcel').addEventListener('change', onHojaExcelChanged);
+
 // Inicializar formulario
 document.addEventListener('DOMContentLoaded', function() {
     const cotizacionForm = document.getElementById('cotizacionForm');
@@ -647,12 +649,6 @@ function onHojaExcelChanged() {
 }
 
 /* ----------------- Vinculación del evento change para #hojaExcel ----------------- */
-document.addEventListener('DOMContentLoaded', () => {
-  const hojaSelect = document.getElementById('hojaExcel');
-  if (hojaSelect) {
-    hojaSelect.addEventListener('change', onHojaExcelChanged);
-  }
-});
 
 // crear_cotizacion.js (fragmento, pega donde quieras)
 async function seleccionarArchivoExcel() {
