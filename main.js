@@ -6,7 +6,8 @@ const os = require('os');
 //SQLITE 
 const sqlite3 = require('sqlite3').verbose();
 // PUPPETEER PARA GENERAR PDF
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-core');
+
 
 // =============== CLASE FILEMANAGER ===============
 class FileManager {
@@ -191,7 +192,9 @@ db.serialize(() => {
       nombre_contacto TEXT NOT NULL,
       telefono TEXT NOT NULL,
       email TEXT NOT NULL,
-      proyecto_servicio TEXT NOT NULL
+      proyecto_servicio TEXT NOT NULL,
+      terminos_condiciones TEXT DEFAULT ('El tiempo de entrega es de 2 días hábiles contados a partir de la autorización correspondiente y de la recepción del anticipo correspondiente.
+                La forma de pago es 50% de anticipo y 50% contra entrega del material terminado')
     )`);
       
   db.run(`
@@ -249,10 +252,19 @@ ipcMain.handle('obtener-cotizacion-id', (event, id) => {
   });
 });
 
-ipcMain.handle('agregar-cotizacion', (event, empresa, fecha, nombre_contacto, telefono, email, proyecto_servicio) => {
+ipcMain.handle('agregar-cotizacion', (event, empresa, fecha, nombre_contacto, telefono, email, proyecto_servicio, terminos_condiciones = null) => {
   return new Promise((resolve, reject) => {
-    db.run(`INSERT INTO Cotizaciones (empresa, fecha, nombre_contacto, telefono, email, proyecto_servicio) VALUES (?, ?, ?, ?, ?, ?)`, 
-    [empresa, fecha, nombre_contacto, telefono, email, proyecto_servicio], function(err) {
+    // Si terminos_condiciones es null, la base de datos usará el valor DEFAULT
+    // Si tiene un valor, se usará ese valor
+    const params = terminos_condiciones !== null ? 
+      [empresa, fecha, nombre_contacto, telefono, email, proyecto_servicio, terminos_condiciones] :
+      [empresa, fecha, nombre_contacto, telefono, email, proyecto_servicio];
+    
+    const sql = terminos_condiciones !== null ?
+      `INSERT INTO Cotizaciones (empresa, fecha, nombre_contacto, telefono, email, proyecto_servicio, terminos_condiciones) VALUES (?, ?, ?, ?, ?, ?, ?)` :
+      `INSERT INTO Cotizaciones (empresa, fecha, nombre_contacto, telefono, email, proyecto_servicio) VALUES (?, ?, ?, ?, ?, ?)`;
+    
+    db.run(sql, params, function(err) {
       if (err) reject(err);
       else resolve(this.lastID);
     });
@@ -268,10 +280,10 @@ ipcMain.handle('eliminar-cotizacion', (event, id) => {
   });
 });
 
-ipcMain.handle('actualizar-cotizacion', (event, empresa, fecha, nombre_contacto, telefono, email, proyecto_servicio, id_cotizacion) => {
+ipcMain.handle('actualizar-cotizacion', (event, empresa, fecha, nombre_contacto, telefono, email, proyecto_servicio, terminos_condiciones, id_cotizacion) => {
   return new Promise((resolve, reject) => {
-    db.run(`UPDATE Cotizaciones SET empresa = ?, fecha = ?, nombre_contacto = ?, telefono = ?, email = ?, proyecto_servicio = ? WHERE id_cotizacion = ?`, 
-    [empresa, fecha, nombre_contacto, telefono, email, proyecto_servicio, id_cotizacion], function(err) {
+    db.run(`UPDATE Cotizaciones SET empresa = ?, fecha = ?, nombre_contacto = ?, telefono = ?, email = ?, proyecto_servicio = ?, terminos_condiciones = ? WHERE id_cotizacion = ?`, 
+    [empresa, fecha, nombre_contacto, telefono, email, proyecto_servicio, terminos_condiciones, id_cotizacion], function(err) {
       if (err) reject(err);
       else resolve(this.lastID);
     });
@@ -427,8 +439,9 @@ ipcMain.handle('generar-pdf-puppeteer', async (event, id_cotizacion) => {
     let browser = null;
     
     try {
+        const puppeteer = require('puppeteer-core');
         console.log('Iniciando generación de PDF para cotización:', id_cotizacion);
-        browser = await launchPuppeteer();
+
         // Obtener datos completos
         const datos = await new Promise((resolve, reject) => {
             db.get(`SELECT * FROM Cotizaciones WHERE id_cotizacion = ?`, [id_cotizacion], (err, cotizacion) => {
@@ -460,9 +473,17 @@ ipcMain.handle('generar-pdf-puppeteer', async (event, id_cotizacion) => {
         const htmlContent = generarHTMLCotizacion(datos);
         
         // Iniciar Puppeteer
-        browser = await puppeteer.launch({
+        const browser = await puppeteer.launch({
+            executablePath: getChromiumPath(),
             headless: true,
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
+            args: [
+              '--no-sandbox', 
+              '--disable-setuid-sandbox',
+              '--disable-dev-shm-usage',
+              '--disable-gpu',
+              '--disable-extensions',
+              '--no-first-run'
+            ]
         });
         
         const page = await browser.newPage();
@@ -602,6 +623,471 @@ ipcMain.handle('generar-pdf-puppeteer', async (event, id_cotizacion) => {
     }
 });
 
+ipcMain.handle('generar-pdf-electron', async (event, id_cotizacion) => {
+    let pdfWindow = null;
+    let tempHtmlPath = null;
+    
+    try {
+        console.log('=== INICIO GENERACIÓN PDF ELECTRON ===');
+        console.log('ID Cotización:', id_cotizacion);
+        
+        // Obtener datos completos
+        console.log('Obteniendo datos de BD...');
+        const datos = await new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => reject(new Error('Timeout en consulta BD')), 10000);
+            
+            db.get(`SELECT * FROM Cotizaciones WHERE id_cotizacion = ?`, [id_cotizacion], (err, cotizacion) => {
+                if (err) {
+                    clearTimeout(timeout);
+                    reject(err);
+                } else {
+                    db.all(`SELECT * FROM Productos WHERE id_cotizacion = ? ORDER BY concepto`, [id_cotizacion], (err, productos) => {
+                        clearTimeout(timeout);
+                        if (err) {
+                            reject(err);
+                        } else {
+                            let subtotal = 0;
+                            productos.forEach(p => subtotal += (p.unidades * p.precio_unitario));
+                            const iva = subtotal * 0.16;
+                            const total = subtotal + iva;
+                            
+                            resolve({
+                                cotizacion,
+                                productos,
+                                subtotal: subtotal.toFixed(2),
+                                iva: iva.toFixed(2),
+                                total: total.toFixed(2),
+                                totalEnLetras: numeroALetras(total)
+                            });
+                        }
+                    });
+                }
+            });
+        });
+
+        console.log('Datos obtenidos:', datos.cotizacion.empresa);
+
+        // Generar solo el contenido del body (sin HTML/HEAD/BODY)
+        console.log('Generando contenido HTML...');
+        // Crear HTML completo con header y footer - VERSIÓN CORREGIDA
+        const fullHtmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Cotización</title>
+            <style>
+                @page {
+                    margin: 0;
+                    size: A4;
+                }
+                
+                body {
+                    font-family: Arial, sans-serif;
+                    margin: 0;
+                    padding: 0;
+                    position: relative;
+                    width: 100%;
+                    height: 100%;
+                }
+                
+                .header {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    height: 80px;
+                    display: flex;
+                    align-items: center;
+                    z-index: 1000;
+                    border-bottom: 2px solid white;
+                    background: white;
+                }
+                
+                .header-left {
+                    flex: 2;
+                    background-color: #c4ce7f;
+                    height: 100%;
+                    display: flex;
+                    align-items: center;
+                    padding: 15px;
+                    box-sizing: border-box;
+                }
+                
+                .header-left h1 {
+                    color: rgba(255, 255, 255, 0.3);
+                    font-size: 40px;
+                    margin: 0;
+                    font-weight: normal;
+                }
+                
+                .header-right {
+                    flex: 1;
+                    background-color: white;
+                    height: 100%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 5px;
+                    box-sizing: border-box;
+                }
+                
+                .header-right img {
+                    max-width: 120px;
+                    height: auto;
+                }
+                
+                .content {
+                    margin: 100px 20px 90px 20px; /* Top, Right, Bottom, Left */
+                    padding-top: 10px;
+                    min-height: calc(100vh - 190px);
+                }
+                
+                .footer {
+                    position: fixed;
+                    bottom: 0;
+                    left: 0;
+                    right: 0;
+                    background-color: #1f3a78;
+                    color: white;
+                    text-align: center;
+                    padding: 12px 8px;
+                    font-size: 12px;
+                    border-top: 3px solid #1f3a78;
+                    height: 60px;
+                    box-sizing: border-box;
+                }
+                
+                .footer p {
+                    margin: 0;
+                    color: white;
+                    line-height: 1.3;
+                }
+                
+                .footer a {
+                    color: #a8c4ff;
+                    text-decoration: none;
+                }
+
+                /* ESTILOS DEL CONTENIDO (los mismos que antes) */
+                .info-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-bottom: 20px;
+                    border: 1px solid #ccc;
+                    border-left: none;
+                    border-right: none;
+                }
+                
+                .info-table td {
+                    border-top: 1px solid #ccc;
+                    border-bottom: 1px solid #ccc;
+                    border-left: none;
+                    border-right: none;
+                    padding: 6px 8px;
+                }
+                
+                .info-table .label {
+                    background-color: #e7edc1;
+                    font-weight: bold;
+                    width: 200px;
+                }
+                
+                .products-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-bottom: 30px;
+                    margin-top: 15px;
+                }
+                
+                .products-table th {
+                    background-color: #34495e;
+                    color: white;
+                    padding: 8px;
+                    text-align: left;
+                    font-weight: bold;
+                    border: 1px solid #2c3e50;
+                }
+                
+                .products-table td {
+                    padding: 6px 8px;
+                    border: 1px solid #ddd;
+                    vertical-align: top;
+                }
+                
+                .products-table img {
+                    max-width: 80px;
+                    max-height: 80px;
+                    display: block;
+                    margin: auto;
+                    object-fit: contain;
+                }
+                
+                .totals-section {
+                    display: flex;
+                    justify-content: flex-end;
+                    margin-bottom: 20px;
+                }
+                
+                .totals-box {
+                    width: 300px;
+                    border: 2px solid #FF8C00;
+                    border-radius: 5px;
+                    overflow: hidden;
+                }
+                
+                .totals-row {
+                    display: flex;
+                    justify-content: space-between;
+                    padding: 6px 12px;
+                    border-bottom: 1px solid #ddd;
+                }
+                
+                .totals-row:last-child {
+                    border-bottom: none;
+                    background-color: #FF8C00;
+                    color: white;
+                    font-weight: bold;
+                    font-size: 14px;
+                }
+                
+                .totals-row.subtotal {
+                    background-color: #f8f9fa;
+                    font-weight: bold;
+                }
+                
+                .total-letters {
+                    background-color: #fff3cd;
+                    border: 2px solid #ffeaa7;
+                    border-radius: 5px;
+                    padding: 10px;
+                    text-align: center;
+                    margin-bottom: 20px;
+                    font-weight: bold;
+                    font-size: 13px;
+                    color: #856404;
+                }
+                
+                .terms-signature-container {
+                    page-break-inside: avoid;
+                    margin-top: 30px;
+                    margin-bottom: 20px;
+                }
+                
+                .terms {
+                    font-size: 11px;
+                    line-height: 1.5;
+                    color: #666;
+                    margin-bottom: 20px;
+                    padding: 10px;
+                    background-color: #f8f9fa;
+                    border-radius: 5px;
+                    page-break-inside: avoid;
+                }
+                
+                .signature {
+                    margin-top: 20px;
+                    margin-bottom: 30px;
+                    page-break-inside: avoid;
+                }
+                
+                .signature p {
+                    margin: 5px 0;
+                }
+                
+                .signature .name {
+                    font-weight: bold;
+                    font-size: 14px;
+                    color: #2c3e50;
+                }
+                
+                .signature .title {
+                    color: #666;
+                    font-style: italic;
+                }
+                
+                /* Forzar impresión de colores */
+                * {
+                    -webkit-print-color-adjust: exact !important;
+                    color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <div class="header-left">
+                    <h1>cotización</h1>
+                </div>
+                <div class="header-right">
+                    <img src="${getLogoBase64("assets/logo.png")}" alt="Logo">
+                </div>
+            </div>
+            
+            <div class="content">
+                ${generarBodyContentCotizacion(datos)}
+            </div>
+            
+            <div class="footer">
+                <p>
+                    NORTE 19 No. 3470, COL. GERTRUDIS SÁNCHEZ 2A. SECCIÓN C.P. 07839, DEL. GUSTAVO A. MADERO, CDMX  
+                    <span style="font-weight: bold; color: white;">TELS: 9180 3871 • 5590 9935</span>  
+                    <a href="http://www.laligacomunicacion.com">www.laligacomunicacion.com</a>
+                </p>
+            </div>
+        </body>
+        </html>
+        `;
+
+        // Guardar HTML en archivo temporal
+        tempHtmlPath = path.join(os.tmpdir(), `cotizacion_${Date.now()}.html`);
+        fs.writeFileSync(tempHtmlPath, fullHtmlContent, 'utf8');
+        console.log('HTML temporal creado:', tempHtmlPath);
+        
+        // Crear ventana invisible
+        console.log('Creando ventana PDF...');
+        pdfWindow = new BrowserWindow({
+            width: 1024,
+            height: 768,
+            show: false,
+            webPreferences: {
+                nodeIntegration: false,
+                contextIsolation: true,
+                webSecurity: false
+            }
+        });
+
+        // Cargar desde archivo temporal
+        console.log('Cargando archivo HTML...');
+        await pdfWindow.loadFile(tempHtmlPath);
+        
+        // Dar tiempo para renderizar
+        console.log('Esperando renderizado...');
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        
+        // Generar PDF - SIN MÁRGINES EXPLÍCITOS
+        console.log('Generando PDF...');
+        const pdfBuffer = await pdfWindow.webContents.printToPDF({
+            pageSize: 'A4',
+            printBackground: true,
+            landscape: false
+            // REMOVIDO: margins configuration
+        });
+        
+        console.log('PDF generado, tamaño:', pdfBuffer.length, 'bytes');
+        
+        // Guardar PDF final
+        const fileName = `cotizacion_${datos.cotizacion.empresa.replace(/[^a-zA-Z0-9]/g, '_')}`;
+        const filePath = fileManager.generateTempPdfPath(fileName);
+        
+        fs.writeFileSync(filePath, pdfBuffer);
+        console.log('PDF guardado en:', filePath);
+
+        // Limpiar archivo temporal HTML
+        if (tempHtmlPath && fs.existsSync(tempHtmlPath)) {
+            fs.unlinkSync(tempHtmlPath);
+        }
+
+        console.log('=== PDF GENERADO EXITOSAMENTE ===');
+
+        return { 
+            success: true, 
+            filePath, 
+            fileName: path.basename(filePath),
+            datos: datos.cotizacion
+        };
+
+    } catch (error) {
+        console.error('=== ERROR EN PDF ELECTRON ===');
+        console.error('Error:', error.message);
+        console.error('Stack:', error.stack);
+        
+        // Limpiar archivo temporal en caso de error
+        if (tempHtmlPath && fs.existsSync(tempHtmlPath)) {
+            try {
+                fs.unlinkSync(tempHtmlPath);
+            } catch (cleanupError) {
+                console.warn('No se pudo limpiar archivo temporal:', cleanupError);
+            }
+        }
+        
+        throw new Error(`Error PDF Electron: ${error.message}`);
+        
+    } finally {
+        if (pdfWindow && !pdfWindow.isDestroyed()) {
+            console.log('Cerrando ventana PDF...');
+            pdfWindow.close();
+        }
+    }
+});
+
+// Función que solo genera el contenido del body
+function generarBodyContentCotizacion(datos) {
+    const tieneImagenes = datos.productos.some(p => p.imagen && p.imagen.trim() !== "");
+
+    return `
+        <table class="info-table">
+            <tr><td class="label" style="width:15%;">Fecha:</td><td>${formatearFechaEspanol(datos.cotizacion.fecha) || ''}</td></tr>
+            <tr><td class="label">Empresa:</td><td>${datos.cotizacion.empresa || ''}</td></tr>
+            <tr><td class="label">Contacto:</td><td>${datos.cotizacion.nombre_contacto || ''}</td></tr>
+            <tr><td class="label">Teléfono:</td><td>${datos.cotizacion.telefono || ''} &nbsp;&nbsp;&nbsp; <strong> email: </strong> ${datos.cotizacion.email || ''}</td></tr>
+            <tr><td class="label">Proyecto o servicio:</td><td>${datos.cotizacion.proyecto_servicio || ''}</td></tr>
+        </table>
+
+        <table class="products-table">
+            <thead>
+                <tr>
+                    <th>Unidades</th>
+                    <th>Concepto</th>
+                    ${tieneImagenes ? `<th>Imagen</th>` : ""}
+                    <th>Precio unitario</th>
+                    <th>Subtotal sin IVA</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${datos.productos.map(p => {
+                    const subtotalProducto = (p.unidades * p.precio_unitario).toFixed(2);
+                    const imagenHTML = p.imagen ? `<img src="${getImagenBase64(p.imagen)}" alt="Imagen del producto">` : "";
+                    return `
+                    <tr>
+                        <td>${p.unidades}</td>
+                        <td><strong>${p.nombre_producto}</strong><br>${p.concepto || ""}</td>
+                        ${tieneImagenes ? `<td>${imagenHTML}</td>` : ""}
+                        <td>$${parseFloat(p.precio_unitario).toFixed(2)}</td>
+                        <td>$${subtotalProducto}</td>
+                    </tr>`;
+                }).join("")}
+            </tbody>
+        </table>
+
+        <div class="totals-section">
+            <div class="totals-box">
+                <div class="totals-row subtotal"><span>TOTAL sin IVA</span><span>$${datos.subtotal}</span></div>
+                <div class="totals-row"><span>IVA</span><span>$${datos.iva}</span></div>
+                <div class="totals-row"><span>TOTAL</span><span>$${datos.total}</span></div>
+            </div>
+        </div>
+
+        <div class="total-letters">
+            ***(${datos.totalEnLetras.charAt(0).toUpperCase() + datos.totalEnLetras.slice(1)})***
+        </div>
+
+        <div class="terms-signature-container">
+            <div class="terms">
+                <p><strong>Términos y Condiciones:</strong></p>
+                <p>${datos.cotizacion.terminos_condiciones}</p>
+            </div>
+
+            <div class="signature">
+                <p>C o r d i a l m e n t e .</p>
+                <br><br>
+                <p class="name">Alejandro Galindo M.</p>
+                <p class="title">Gerente de Proyectos</p>
+            </div>
+        </div>
+    `;
+}
+
 // IPC Handler para abrir PDF y eliminarlo después (MEJORADO)
 ipcMain.handle('abrir-pdf', async (event, filePath) => {
     try {
@@ -656,116 +1142,59 @@ ipcMain.handle('save-pdf-permanent', async (event, tempFilePath, customName) => 
     }
 });
 
-// =============== FUNCIONES DE PUPPETEER (SIN CAMBIOS) ===============
-function getChromiumExecutablePath() {
+// =============== FUNCIONES DE PUPPETEER  =====================
+
+function getChromiumPath() {
   if (app.isPackaged) {
+    // En aplicación empaquetada, Forge copia a resources/node_modules/puppeteer/.local-chromium
+    const resourcesPath = process.resourcesPath;
+    
+    // Posibles ubicaciones donde puede estar Chromium
     const possiblePaths = [
-      path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules', 'puppeteer', '.local-chromium'),
-      path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules', '@puppeteer', 'browsers'),
-      path.join(process.resourcesPath, '.local-chromium'),
-      path.join(process.resourcesPath, 'browsers'),
+      path.join(resourcesPath, 'node_modules', 'puppeteer', '.local-chromium'),
+      path.join(resourcesPath, '.local-chromium'),
+      path.join(resourcesPath, 'chromium'),
+      path.join(resourcesPath, 'app', 'node_modules', 'puppeteer', '.local-chromium')
     ];
     
     for (const basePath of possiblePaths) {
-      if (fs.existsSync(basePath)) {
-        try {
-          const chromiumDirs = fs.readdirSync(basePath, { withFileTypes: true })
-            .filter(dirent => dirent.isDirectory())
-            .map(dirent => dirent.name);
+      try {
+        if (fs.existsSync(basePath)) {
+          console.log('Chromium encontrado en:', basePath);
           
-          for (const dir of chromiumDirs) {
-            let executablePath;
-            if (process.platform === 'win32') {
-              executablePath = path.join(basePath, dir, 'chrome.exe');
-            } else if (process.platform === 'darwin') {
-              executablePath = path.join(basePath, dir, 'Chromium.app', 'Contents', 'MacOS', 'Chromium');
-            } else {
-              executablePath = path.join(basePath, dir, 'chrome');
-            }
+          // Buscar recursivamente chrome.exe
+          const findChrome = (dir) => {
+            const items = fs.readdirSync(dir, { withFileTypes: true });
             
-            if (fs.existsSync(executablePath)) {
-              console.log('Chromium encontrado en:', executablePath);
-              return executablePath;
+            for (const item of items) {
+              const fullPath = path.join(dir, item.name);
+              
+              if (item.isDirectory()) {
+                const found = findChrome(fullPath);
+                if (found) return found;
+              } else if (item.name === 'chrome.exe') {
+                return fullPath;
+              }
             }
+            return null;
+          };
+          
+          const chromePath = findChrome(basePath);
+          if (chromePath) {
+            console.log('Chrome ejecutable encontrado:', chromePath);
+            return chromePath;
           }
-        } catch (error) {
-          console.log('Error leyendo directorio:', basePath, error.message);
         }
+      } catch (error) {
+        console.log('Error buscando en:', basePath, error.message);
       }
     }
     
-    console.log('No se encontró Chromium empaquetado, usando Chrome del sistema');
-    return getSystemChromePath();
+    throw new Error('No se encontró Chromium en la aplicación empaquetada');
   } else {
-    try {
-      return puppeteer.executablePath();
-    } catch (error) {
-      console.log('Error obteniendo executablePath, usando Chrome del sistema');
-      return getSystemChromePath();
-    }
-  }
-}
-
-function getSystemChromePath() {
-  const chromePaths = {
-    win32: [
-      'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-      'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-      path.join(process.env.LOCALAPPDATA, 'Google\\Chrome\\Application\\chrome.exe'),
-      path.join(process.env.PROGRAMFILES, 'Google\\Chrome\\Application\\chrome.exe'),
-      path.join(process.env['PROGRAMFILES(X86)'] || '', 'Google\\Chrome\\Application\\chrome.exe')
-    ],
-    darwin: [
-      '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
-    ],
-    linux: [
-      '/usr/bin/google-chrome',
-      '/usr/bin/google-chrome-stable',
-      '/usr/bin/chromium-browser',
-      '/snap/bin/chromium'
-    ]
-  };
-  
-  const platformPaths = chromePaths[process.platform] || chromePaths.linux;
-  
-  for (const chromePath of platformPaths) {
-    if (chromePath && fs.existsSync(chromePath)) {
-      console.log('Chrome del sistema encontrado en:', chromePath);
-      return chromePath;
-    }
-  }
-  
-  console.error('No se pudo encontrar Chrome en el sistema');
-  return null;
-}
-
-async function launchPuppeteer() {
-  const executablePath = getChromiumExecutablePath();
-  
-  const launchOptions = {
-    headless: 'new',
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-accelerated-2d-canvas',
-      '--no-first-run',
-      '--no-zygote',
-      '--single-process',
-      '--disable-gpu'
-    ]
-  };
-  
-  if (executablePath) {
-    launchOptions.executablePath = executablePath;
-  }
-  
-  try {
-    console.log('Lanzando Puppeteer con opciones:', launchOptions);
-    return await puppeteer.launch(launchOptions);
-  } catch (error) {
-    console.error('Error al lanzar Puppeteer:', error);
-    throw error;
+    // En desarrollo
+    const puppeteer = require('puppeteer');
+    return puppeteer.executablePath();
   }
 }
 
@@ -1301,8 +1730,7 @@ function generarHTMLCotizacion(datos) {
             <div class="terms-signature-container">
                 <div class="terms">
                     <p><strong>Términos y Condiciones:</strong></p>
-                    <p>El tiempo de entrega es de 2 días hábiles contados a partir de la autorización correspondiente y de la recepción del anticipo correspondiente.</p>
-                    <p>La forma de pago es 50% de anticipo y 50% contra entrega del material terminado.</p>
+                    <p>${datos.cotizacion.terminos_condiciones}.</p>
                 </div>
 
                 <div class="signature">

@@ -59,6 +59,24 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+document.getElementById('hojaExcel').addEventListener('change', onHojaExcelChanged)
+
+// Texto por defecto (debe coincidir con el DEFAULT de la base de datos)
+const TERMINOS_POR_DEFECTO = `El tiempo de entrega es de 2 días hábiles contados a partir de la autorización correspondiente y de la recepción del anticipo correspondiente.
+La forma de pago es 50% de anticipo y 50% contra entrega del material terminado`;
+
+// Función para restaurar términos por defecto
+function restaurarTerminosPorDefecto() {
+    if (confirm('¿Restaurar términos y condiciones por defecto? Se perderán los cambios actuales.')) {
+        document.getElementById('terminos_condiciones').value = TERMINOS_POR_DEFECTO;
+    }
+}
+
+// Función para verificar si el texto es el mismo que el por defecto
+function sonTerminosPorDefecto(texto) {
+    return texto.trim() === TERMINOS_POR_DEFECTO.trim();
+}
+
 // Función para agregar cotización
 async function agregar_cotizacion(event) {
     event.preventDefault(); // Prevenir envío normal del formulario
@@ -69,6 +87,7 @@ async function agregar_cotizacion(event) {
     const email = document.getElementById('email').value.trim();
     const proyecto_servicio = document.getElementById('proyecto_servicio').value.trim();
     const fecha = document.getElementById('fecha').value.trim();
+    const terminos_condiciones = document.getElementById('terminos_condiciones').value;
     
     // Validaciones básicas
     if (!nombre_empresa || !nombre_contacto || !proyecto_servicio || !fecha) {
@@ -76,17 +95,38 @@ async function agregar_cotizacion(event) {
         return;
     }
     
+    // Determinar si enviar los términos o dejar que la BD use el DEFAULT
+    const enviarTerminos = !sonTerminosPorDefecto(terminos_condiciones);
+    const terminosParam = enviarTerminos ? terminos_condiciones : null;
+    
     try {
         // Guardar cotización
         if (isEditing) {
-            await window.api.actualizarCotizacion(nombre_empresa, fecha, nombre_contacto, telefono, email, proyecto_servicio, editingId);
+            // Para edición, siempre enviamos los términos (aunque sean los por defecto)
+            await window.api.actualizarCotizacion(
+                nombre_empresa, 
+                fecha, 
+                nombre_contacto, 
+                telefono, 
+                email, 
+                proyecto_servicio, 
+                terminos_condiciones, // Siempre enviar en actualización
+                editingId
+            );
             alert('Cotización actualizada exitosamente');
 
             await window.api.eliminarProductosCotizacion(editingId);
             await guardarProductos(editingId);
         } else {
+            // Para nueva cotización, usamos la lógica de términos
             const cotizacionId = await window.api.agregarCotizacion(
-                nombre_empresa, fecha, nombre_contacto, telefono, email, proyecto_servicio
+                nombre_empresa, 
+                fecha, 
+                nombre_contacto, 
+                telefono, 
+                email, 
+                proyecto_servicio,
+                terminosParam // Puede ser null para usar DEFAULT
             );
             await guardarProductos(cotizacionId);
             alert('Cotización guardada exitosamente');
@@ -126,6 +166,7 @@ async function guardarProductos(cotizacionId) {
 }
 
 // Función para cargar cotización para editar
+// Función para cargar cotización para editar
 async function cargarCotizacionParaEditar(cotizacionId) {
     try {
         // Cargar datos de la cotización
@@ -139,6 +180,15 @@ async function cargarCotizacionParaEditar(cotizacionId) {
             document.getElementById('email').value = cotizacion.email || '';
             document.getElementById('proyecto_servicio').value = cotizacion.proyecto_servicio || '';
             document.getElementById('fecha').value = cotizacion.fecha || '';
+            
+            // Cargar términos y condiciones
+            const terminosTextarea = document.getElementById('terminos_condiciones');
+            if (cotizacion.terminos_condiciones) {
+                terminosTextarea.value = cotizacion.terminos_condiciones;
+            } else {
+                // Si no hay términos en la BD, usar los por defecto
+                terminosTextarea.value = TERMINOS_POR_DEFECTO;
+            }
         }
         
         // Cargar productos de la cotización
@@ -163,7 +213,6 @@ async function cargarCotizacionParaEditar(cotizacionId) {
         } else {
             // Si no hay productos, agregar 1 item por defecto
             agregarItem();
-
         }
         
         // Cambiar texto del botón
@@ -176,6 +225,7 @@ async function cargarCotizacionParaEditar(cotizacionId) {
         window.location.href = 'index.html';
     }
 }
+
 
 function agregarItem(datosItem = null) {
     itemCounter++;

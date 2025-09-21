@@ -2,13 +2,13 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
   // Cotizaciones
-  obtenerCotizaciones: () => ipcRenderer.invoke('obtener-cotizaciones'),
-  obtenerCotizacionId: (id) => ipcRenderer.invoke('obtener-cotizacion-id', id),
-  agregarCotizacion: (empresa, fecha, nombre_contacto, telefono, email, proyecto_servicio) => 
-    ipcRenderer.invoke('agregar-cotizacion', empresa, fecha, nombre_contacto, telefono, email, proyecto_servicio),
-  eliminarCotizacion: (id) => ipcRenderer.invoke('eliminar-cotizacion', id),
-  actualizarCotizacion: (empresa, fecha, nombre_contacto, telefono, email, proyecto_servicio, id_cotizacion) => 
-    ipcRenderer.invoke('actualizar-cotizacion', empresa, fecha, nombre_contacto, telefono, email, proyecto_servicio, id_cotizacion),
+obtenerCotizaciones: () => ipcRenderer.invoke('obtener-cotizaciones'),
+obtenerCotizacionId: (id) => ipcRenderer.invoke('obtener-cotizacion-id', id),
+agregarCotizacion: (empresa, fecha, nombre_contacto, telefono, email, proyecto_servicio, terminos_condiciones = '') => 
+  ipcRenderer.invoke('agregar-cotizacion', empresa, fecha, nombre_contacto, telefono, email, proyecto_servicio, terminos_condiciones),
+eliminarCotizacion: (id) => ipcRenderer.invoke('eliminar-cotizacion', id),
+actualizarCotizacion: (empresa, fecha, nombre_contacto, telefono, email, proyecto_servicio, terminos_condiciones, id_cotizacion) => 
+  ipcRenderer.invoke('actualizar-cotizacion', empresa, fecha, nombre_contacto, telefono, email, proyecto_servicio, terminos_condiciones, id_cotizacion),
 
   // Productos
   agregarProducto: (id_cotizacion, nombre_producto, precio_unitario, concepto, unidades, imagen) =>
