@@ -9,6 +9,7 @@ agregarCotizacion: (empresa, fecha, nombre_contacto, telefono, email, proyecto_s
 eliminarCotizacion: (id) => ipcRenderer.invoke('eliminar-cotizacion', id),
 actualizarCotizacion: (empresa, fecha, nombre_contacto, telefono, email, proyecto_servicio, terminos_condiciones, id_cotizacion) => 
   ipcRenderer.invoke('actualizar-cotizacion', empresa, fecha, nombre_contacto, telefono, email, proyecto_servicio, terminos_condiciones, id_cotizacion),
+ copiarCotizacion: (id) => ipcRenderer.invoke('copiar-cotizacion', id),
 
   // Productos
   agregarProducto: (id_cotizacion, nombre_producto, precio_unitario, concepto, unidades, imagen) =>

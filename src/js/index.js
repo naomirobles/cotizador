@@ -41,6 +41,12 @@ async function cargarCotizaciones() {
                         Editar
                     </button>
                     <button 
+                        onclick="copiarCotizacion(${cotizacion.id_cotizacion})" 
+                        class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded text-sm transition-colors"
+                    >
+                        Copiar
+                    </button>
+                    <button 
                         onclick="generarPDF('${cotizacion.id_cotizacion}')"
                         class="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded text-sm transition-colors"
                     >
@@ -78,6 +84,27 @@ function cerrarModalEliminar() {
     document.getElementById('deleteModal').classList.remove('flex');
     cotizacionAEliminar = null;
 }
+
+// Función para copiar cotización
+async function copiarCotizacion(id) {
+    try {
+        mostrarCargando('Copiando cotización...');
+        const resultado = await window.api.copiarCotizacion(id);
+        ocultarCargando();
+
+        if (resultado.success) {
+            mostrarNotificacion('Cotización copiada exitosamente', 'success');
+            cargarCotizaciones(); // refrescar tabla
+        } else {
+            throw new Error('Error al copiar cotización');
+        }
+    } catch (error) {
+        ocultarCargando();
+        console.error('Error copiando cotización:', error);
+        mostrarNotificacion('Error al copiar cotización: ' + error.message, 'error');
+    }
+}
+
 
 async function confirmarEliminar() {
     if (cotizacionAEliminar) {

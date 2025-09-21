@@ -234,6 +234,60 @@ app.on('activate', () => {
 });
 
 // =============== IPC HANDLERS PARA BASE DE DATOS ===============
+
+ipcMain.handle('copiar-cotizacion', async (event, id_cotizacion) => {
+  return new Promise((resolve, reject) => {
+    db.serialize(() => {
+      // 1. Obtener cotización original
+      db.get(`SELECT * FROM Cotizaciones WHERE id_cotizacion = ?`, [id_cotizacion], (err, cotizacion) => {
+        if (err) return reject(err);
+        if (!cotizacion) return reject(new Error("Cotización no encontrada"));
+
+        // 2. Insertar nueva cotización duplicada
+        const stmt = db.prepare(`
+          INSERT INTO Cotizaciones (empresa, fecha, nombre_contacto, telefono, email, proyecto_servicio, terminos_condiciones)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `);
+
+        const nuevaFecha = new Date().toISOString().split("T")[0]; // fecha actual
+        stmt.run([
+          cotizacion.empresa,
+          nuevaFecha,
+          cotizacion.nombre_contacto,
+          cotizacion.telefono,
+          cotizacion.email,
+          cotizacion.proyecto_servicio + " (Copia)",
+          cotizacion.terminos_condiciones
+        ], function (err) {
+          if (err) return reject(err);
+
+          const nuevoId = this.lastID;
+
+          // 3. Copiar productos relacionados
+          db.all(`SELECT * FROM Productos WHERE id_cotizacion = ?`, [id_cotizacion], (err, productos) => {
+            if (err) return reject(err);
+
+            const prodStmt = db.prepare(`
+              INSERT INTO Productos (id_cotizacion, nombre_producto, precio_unitario, concepto, unidades, imagen)
+              VALUES (?, ?, ?, ?, ?, ?)
+            `);
+
+            productos.forEach(p => {
+              prodStmt.run([nuevoId, p.nombre_producto, p.precio_unitario, p.concepto, p.unidades, p.imagen]);
+            });
+
+            prodStmt.finalize(() => {
+              resolve({ success: true, nuevoId });
+            });
+          });
+        });
+
+        stmt.finalize();
+      });
+    });
+  });
+});
+
 ipcMain.handle('obtener-cotizaciones', () => {
   return new Promise((resolve, reject) => {
     db.all(`SELECT * FROM Cotizaciones ORDER BY fecha DESC`, [], (err, rows) => {
