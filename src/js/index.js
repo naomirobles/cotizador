@@ -38,19 +38,19 @@ async function cargarCotizaciones() {
                         onclick="editarCotizacion('${cotizacion.id_cotizacion}')"
                         class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-sm transition-colors"
                     >
-                        Editar
+                        <i class="fa-solid fa-pencil"></i>
                     </button>
                     <button 
                         onclick="copiarCotizacion(${cotizacion.id_cotizacion})" 
                         class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded text-sm transition-colors"
                     >
-                        Copiar
+                        <i class="fa-solid fa-copy"></i>
                     </button>
                     <button 
                         onclick="generarPDF('${cotizacion.id_cotizacion}')"
                         class="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded text-sm transition-colors"
                     >
-                        Ver PDF
+                        <i class="fa-solid fa-file-pdf"></i>
                     </button>
                     <button 
                         onclick="eliminarCotizacion('${cotizacion.id_cotizacion}')"
